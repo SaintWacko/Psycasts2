@@ -9,11 +9,11 @@
 
   <!-- Awakening / enlightenment letters and messages -->
   <PS_LetterAwakeningLabel>Psychic awakening</PS_LetterAwakeningLabel>
-  <PS_LetterAwakenMeditationText>{0} has awakened as a psycaster through deep meditation. Choose the first path to walk.</PS_LetterAwakenMeditationText>
-  <PS_LetterAwakenExternalText>{0} has awakened as a psycaster - an outside gift stirred a latent path to the surface. Choose the first path to walk.</PS_LetterAwakenExternalText>
+  <PS_LetterAwakenMeditationText>{0} has awakened as a psycaster. Choose your starting tree.</PS_LetterAwakenMeditationText>
+  <PS_LetterAwakenExternalText>{0} has awakened as a psycaster. Choose your starting tree.</PS_LetterAwakenExternalText>
   <PS_LetterJoinPsycasterLabel>A psycaster without a path</PS_LetterJoinPsycasterLabel>
   <PS_LetterJoinPsycasterText>{0} carries a psychic link but never walked a path. Now that they stand with the colony, the choice is yours to make for them.</PS_LetterJoinPsycasterText>
-  <PS_LetterAwakenSurgeText>{0} has awakened as a psycaster - a surge of psychic power stirred a latent path to the surface. Choose the first path to walk.</PS_LetterAwakenSurgeText>
+  <PS_LetterAwakenSurgeText>{0} has awakened as a psycaster. Choose your starting tree.</PS_LetterAwakenSurgeText>
   <PS_LetterEnlightenment>Enlightenment: {0}</PS_LetterEnlightenment>
   <PS_LetterElevatedSilent>{0} has been elevated to {1}. New psychic paths and power settle into them unbidden.</PS_LetterElevatedSilent>
   <PS_LetterElevatedTowardText>{0} has been elevated toward {1}. A new psycast path manifests for them to claim.</PS_LetterElevatedTowardText>
@@ -28,15 +28,15 @@
   <PS_CannotAwaken>cannot awaken: already at this enlightenment tier, or ineligible</PS_CannotAwaken>
 
   <!-- Awakening card pick window -->
-  <PS_CardTitleT1>{0} awakens as a psycaster</PS_CardTitleT1>
+  <PS_CardTitleT1>Select a path for {0}</PS_CardTitleT1>
   <PS_CardTitleT2>{0} ascends - Enlightenment II</PS_CardTitleT2>
   <PS_CardTitleT3>{0} transcends - Enlightenment III</PS_CardTitleT3>
-  <PS_CardPromptT1>Long meditation has unlocked a latent gift. Turn one card to reveal the path it calls them to.</PS_CardPromptT1>
+  <PS_CardPromptT1>Click to reveal options.</PS_CardPromptT1>
   <PS_CardPromptT2>A pilgrimage fulfilled. Turn one of the cards to reveal a new path.</PS_CardPromptT2>
   <PS_CardPromptT3>The mind burns bright - turn one card; any path may answer the call.</PS_CardPromptT3>
-  <PS_CardSubRevealAll>Turn the other cards to reveal them - the centered revealed card is the pick. Embrace when ready.</PS_CardSubRevealAll>
-  <PS_CardSubCommitted>The cards are cast. This path is now theirs.</PS_CardSubCommitted>
-  <PS_CardEmbrace>Embrace the {0} path</PS_CardEmbrace>
+  <PS_CardSubRevealAll>Click to reveal options.</PS_CardSubRevealAll>
+  <PS_CardSubCommitted>Your path has been chosen.</PS_CardSubCommitted>
+  <PS_CardEmbrace>Embrace {0} path</PS_CardEmbrace>
   <PS_CardForgo>Forgo: +{0} specialization points</PS_CardForgo>
   <PS_CardForgoAll>Forgo the cards: +{0} specialization points</PS_CardForgoAll>
   <PS_CardReroll>Keep meditating - reroll the cards (coma risk)</PS_CardReroll>

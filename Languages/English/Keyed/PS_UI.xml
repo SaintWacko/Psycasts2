@@ -11,11 +11,11 @@
   <PS_InvestBonus>This skill's bonus: +{0} &#8594; +{1}.\nHold Shift while clicking to skip this confirmation.</PS_InvestBonus>
 
   <!-- Psycast tab tool block -->
-  <PS_PilgrimUnbound>Unbound</PS_PilgrimUnbound>
-  <PS_PilgrimTrialAltar>Trial of the Altar</PS_PilgrimTrialAltar>
-  <PS_PilgrimWayAnima>Way of the Anima</PS_PilgrimWayAnima>
-  <PS_PilgrimPathBtn>Pilgrim's path: {0}  &#9662;</PS_PilgrimPathBtn>
-  <PS_PilgrimPathTip>The road this seeker will be called to walk toward their next tier of Enlightenment:\n\n&#8226; Trial of the Altar (combat): a single hallowed site, held against waves of the Ancient Psycaster Order.\n&#8226; Way of the Anima (pacifist): a longer pilgrimage among the anima trees, with no bloodshed.\n&#8226; Unbound: let fate (the storyteller) choose either road.\n\nThose who cannot bring themselves to violence always walk the Way of the Anima.</PS_PilgrimPathTip>
+  <PS_PilgrimUnbound>Any</PS_PilgrimUnbound>
+  <PS_PilgrimTrialAltar>Offensive</PS_PilgrimTrialAltar>
+  <PS_PilgrimWayAnima>Passive</PS_PilgrimWayAnima>
+  <PS_PilgrimPathBtn>Journey type: {0}  &#9662;</PS_PilgrimPathBtn>
+  <PS_PilgrimPathTip>The road this psycaster will be called to walk toward their next tier of enlightenment:\n\n&#8226; Trial of the Altar (offensive): a single hallowed site, held against waves of the Ancient Psycaster Order.\n&#8226; Way of the Anima (passive): a longer pilgrimage among the anima trees, with no bloodshed.\n&#8226; Unbound: let fate (the storyteller) choose either road.</PS_PilgrimPathTip>
   <PS_MsgNoViolencePilgrim>{0} is incapable of violence, always the anima (pacifist) pilgrimage.</PS_MsgNoViolencePilgrim>
   <PS_DefaultFocusBtn>Default focus: {0}  &#9662;</PS_DefaultFocusBtn>
   <PS_DefaultFocusTip>Personal meditation focus preference. Used when this colonist meditates at a focus building that doesn't have its own attunement set.\n\nPriority: building's attunement &#8594; pawn's default &#8594; building's native focus &#8594; unfocused.</PS_DefaultFocusTip>
