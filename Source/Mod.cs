@@ -80,6 +80,10 @@ namespace PsycastSynergies
         public bool enableLockedMechTrees = true;
         public bool lockPathsToEnlightenment = true;   // paths unlock only via the awakening cards (or dev mode)
         public bool hideUnlearnedPaths = true;         // VPE-native tab: list only unlocked paths (active while lockPaths is on; tab dev mode bypasses)
+        public List<string> autoUnlockPathDefs = new List<string>(); // psycast trees automatically unlocked for every pawn with psycasts
+        public bool disableTreePsycastUnlocks = false; // tree nodes can no longer be learned from the UI; points only level known psycasts
+        public bool requirePsycasterLevelForUnlock = false; // learning a psycast requires meeting its level-1 psycaster requirement
+        public bool requirePsycasterLevelForPsytrainers = false; // optionally extend the above gate to psytrainers too
 
         // XP system. Casting (tier-scaled) is the primary source; meditation is a reduced trickle;
         // meditating pawns can randomly break through ("Enlightenment") for a big burst.
@@ -175,6 +179,11 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref enableLockedMechTrees, "enableLockedMechTrees", true);
             Scribe_Values.Look(ref lockPathsToEnlightenment, "lockPathsToEnlightenment", true);
             Scribe_Values.Look(ref hideUnlearnedPaths, "hideUnlearnedPaths", true);
+            Scribe_Collections.Look(ref autoUnlockPathDefs, "autoUnlockPathDefs", LookMode.Value);
+            if (autoUnlockPathDefs == null) autoUnlockPathDefs = new List<string>();
+            Scribe_Values.Look(ref disableTreePsycastUnlocks, "disableTreePsycastUnlocks", false);
+            Scribe_Values.Look(ref requirePsycasterLevelForUnlock, "requirePsycasterLevelForUnlock", false);
+            Scribe_Values.Look(ref requirePsycasterLevelForPsytrainers, "requirePsycasterLevelForPsytrainers", false);
             Scribe_Values.Look(ref meditationXpMult, "meditationXpMult", 0.35f);
             Scribe_Values.Look(ref castXpPerTier, "castXpPerTier", 20f);
             Scribe_Values.Look(ref noPsyfocusDecay, "noPsyfocusDecay", true);
@@ -260,6 +269,7 @@ namespace PsycastSynergies
         {
             base.WriteSettings();
             ApplyVpeLevelCap();
+            UnlockControls.SyncAutoUnlockedPaths();
             // Sliders/toggles feed the multiplier math - drop the tick memo and any cached tooltip
             // model so the new values show immediately.
             PerfCache.Bump();
@@ -395,6 +405,7 @@ namespace PsycastSynergies
         void TabSpec(Listing_Standard l)
         {
             var s = Settings;
+            bool showPsytrainerGate = s.requirePsycasterLevelForUnlock;
             Head(l, "PS_SetH_SpecPoints".Translate());
             IS(l, "PS_SetSpecLevels".Translate(s.specLevelsPerPoint), ref s.specLevelsPerPoint, 1, 20,
                 "PS_SetSpecLevelsTip".Translate());
@@ -411,6 +422,21 @@ namespace PsycastSynergies
             CB(l, "PS_SetMechTrees".Translate(), ref s.enableLockedMechTrees, "PS_SetMechTreesTip".Translate());
             CB(l, "PS_SetLockPaths".Translate(), ref s.lockPathsToEnlightenment, "PS_SetLockPathsTip".Translate());
             CB(l, "PS_SetHidePaths".Translate(), ref s.hideUnlearnedPaths, "PS_SetHidePathsTip".Translate());
+            Rect autoPaths = l.GetRect(28f);
+            if (Mouse.IsOver(autoPaths)) TooltipHandler.TipRegion(autoPaths, "PS_SetAutoUnlockPathsTip".Translate());
+            if (Widgets.ButtonText(autoPaths, "PS_SetAutoUnlockPaths".Translate(UnlockControls.SelectedAutoUnlockPathCount())))
+                UnlockControls.OpenAutoUnlockPathMenu();
+            l.Label("PS_SetAutoUnlockPathsActive".Translate(UnlockControls.SelectedAutoUnlockPathSummary()));
+            if (UnlockControls.SelectedAutoUnlockPathCount() > 0)
+            {
+                Rect clearAutoPaths = l.GetRect(28f);
+                if (Widgets.ButtonText(clearAutoPaths, "PS_SetAutoUnlockPathsClear".Translate()))
+                    s.autoUnlockPathDefs.Clear();
+            }
+            CB(l, "PS_SetDisableTreeUnlocks".Translate(), ref s.disableTreePsycastUnlocks, "PS_SetDisableTreeUnlocksTip".Translate());
+            CB(l, "PS_SetRequirePsyLevelUnlock".Translate(), ref s.requirePsycasterLevelForUnlock, "PS_SetRequirePsyLevelUnlockTip".Translate());
+            if (showPsytrainerGate)
+                CB(l, "PS_SetRequirePsyLevelPsytrainer".Translate(), ref s.requirePsycasterLevelForPsytrainers, "PS_SetRequirePsyLevelPsytrainerTip".Translate());
 
             Head(l, "PS_SetH_SynergyGraph".Translate());
             if (s.disableSynergies)

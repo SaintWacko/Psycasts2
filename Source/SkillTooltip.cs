@@ -240,6 +240,7 @@ namespace PsycastSynergies
             public float psyfocusCost, entropyCost;
             public bool alt;
             public bool synergiesOff;   // synergy system disabled: hide receives/empowers sections
+            public Pawn pawn;
 
             // Precomputed draw strings (built once per model; the model itself is cached across
             // frames, so Draw never runs Translate/format/concat while merely hovering).
@@ -343,6 +344,7 @@ namespace PsycastSynergies
             var m = new Model
             {
                 def = def,
+                pawn = pawn,
                 owned = owned,
                 lvl = lvl, cap = SkillSystem.MaxLevel(pawn, def),
                 bonus = SkillSystem.ExternalBonus(pawn, def),
@@ -688,6 +690,11 @@ namespace PsycastSynergies
 
         private static string FooterText(Model m)
         {
+            if (!m.owned)
+            {
+                string blocked = UnlockControls.DisabledTreeTooltip(m.pawn, m.def);
+                if (!blocked.NullOrEmpty()) return blocked;
+            }
             if (!m.owned) return "PS_TipNotLearned".Translate();
             if (m.lvl < m.cap) return "PS_TipClickInvest".Translate();
             if (m.lvl < m.absCap) return "PS_TipLockedLevel".Translate();

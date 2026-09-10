@@ -819,6 +819,7 @@ namespace PsycastSynergies
     public static class ForcedMeditation
     {
         public static readonly HashSet<Pawn> Active = new HashSet<Pawn>();
+        private static readonly List<Pawn> stale = new List<Pawn>();
 
         public static bool On(Pawn p) => p != null && Active.Contains(p);
 
@@ -846,6 +847,27 @@ namespace PsycastSynergies
             if (gc == null) return;
             foreach (var kv in gc.MedDataPairs)
                 if (kv.Key != null && kv.Value != null && kv.Value.forcedMeditation) Active.Add(kv.Key);
+        }
+
+        // External job interrupts (Perspective Shift control changes, manual orders, etc.) can end the
+        // meditation job without going through our explicit Stop button. Clear the forced flag as soon as
+        // the pawn is no longer actually on a Meditate job, while still preserving the intended drafted
+        // pause/resume behavior.
+        public static void Sync()
+        {
+            if (Active.Count == 0) return;
+            stale.Clear();
+            foreach (var pawn in Active)
+            {
+                if (pawn == null || pawn.Dead || pawn.Destroyed) { stale.Add(pawn); continue; }
+                if (pawn.Drafted) continue;
+                if (pawn.CurJobDef != JobDefOf.Meditate) stale.Add(pawn);
+            }
+            for (int i = 0; i < stale.Count; i++)
+            {
+                if (stale[i] == null) Active.Remove(null);
+                else Stop(stale[i]);
+            }
         }
     }
 

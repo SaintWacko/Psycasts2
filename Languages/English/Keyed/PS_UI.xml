@@ -164,6 +164,11 @@
   <PS_TipMaxLevel>Max level {0} reached</PS_TipMaxLevel>
   <PS_TipReqLevel>Required level: {0}</PS_TipReqLevel>
   <PS_TipNotLearned>Not learned - unlock in the tree to start leveling</PS_TipNotLearned>
+  <PS_TipTreeUnlocksDisabled>Tree unlocking disabled - only known psycasts can be leveled</PS_TipTreeUnlocksDisabled>
+  <PS_TipUnlockPsyLevel>Requires psycaster level {0} to learn ({1} current)</PS_TipUnlockPsyLevel>
+  <PS_MsgTreeUnlockDisabled>This psycast cannot be learned from the tree while tree unlocking is disabled.</PS_MsgTreeUnlockDisabled>
+  <PS_MsgUnlockPsyLevel>This psycast requires psycaster level {0} to learn ({1} current).</PS_MsgUnlockPsyLevel>
+  <PS_MsgUnlockPsyLevelPsytrainer>{0} requires psycaster level {1} before a psytrainer can teach it ({2} current).</PS_MsgUnlockPsyLevelPsytrainer>
   <PS_TipClickInvest>Click to invest  &#8226;  Shift-click skips confirm</PS_TipClickInvest>
   <PS_TipLockedLevel>Locked - raise your psycaster level</PS_TipLockedLevel>
   <PS_TipMaxReached>Maximum level reached</PS_TipMaxReached>
