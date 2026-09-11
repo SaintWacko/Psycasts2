@@ -1,0 +1,87 @@
+[h1]Psycasts²[/h1]
+
+Psycasts² rebuilds progression on top of Vanilla Psycasts Expanded. Individual psycasts gain levels you spend points on. Colonists earn their psylink by meditating for it instead of turning up with one. A specialization tree sits above all of it, and a main tab tells you who is climbing and when they arrive.
+
+[img]https://circinus.sh/api/v1/img/d405f47dad0e78369460.png[/img]
+
+[h2]Psycast levels[/h2]
+Every psycast from VPE, and from any addon built on the VPE framework, can be levelled from the psycast tab. One level makes that psycast 5 percent stronger by default: more damage, a wider area, a longer effect. A psycast tops out at level 10.
+
+You need 3 psycaster levels for every level you put into a single psycast, so a new psycaster cannot pour everything into one ability. At that rate a level 30 psycaster can take exactly one psycast to the top. The card that pops up when you hover a psycast shows the real numbers for the pawn you are looking at, including what it will be at the next level.
+
+[h2]Psycasts feed each other[/h2]
+Psycasts in the same tree are linked. Levelling one adds 2 percent per level to the psycasts it feeds, and the skill card names which ones. The links are worked out from the schools you actually have loaded, so addon trees are covered without anyone writing a patch for them. If you would rather have flat levels, one checkbox turns the whole system off.
+
+[h2]Meditation, awakening and the card draw[/h2]
+[list]
+[*] Any colonist can be told to meditate, psycaster or not.
+[*] A colonist who has never held a psylink builds toward Awakening. 36 hours of meditation guarantees it, and luck can get there sooner.
+[*] Awakening deals a hand of three path cards. You turn one over and that becomes the pawn's first psycast tree.
+[*] Above that: Enlightened deals five cards, Illuminated deals three drawn from every path in the game, and beyond those the Transcendent tiers keep going, each costing more meditation than the last.
+[*] Meditating more than six hours a day starts to risk a psychic coma, and an unbroken streak raises it further. The safe window is a slider. Push it to a full day and the risk is switched off entirely.
+[*] Psylinks are no longer handed out during pawn generation. About one eligible pawn in twenty spawns already Awakened. Everyone else has to earn it.
+[/list]
+
+The Psycasters tab in the picture above lists every colonist, prisoner and slave: their tier, their paths, how much they meditate, what milestone is next, and roughly when they get there. The estimate follows a rolling average of each pawn's meditation hours, so it moves when their schedule does. When there is no rate to work from it says so rather than inventing a date.
+
+[h2]The constellation[/h2]
+58 specializations on a tree you spend specialization points in. One point per 4 psycaster levels, plus points earned from kills made shortly after a psycast, plus 4 more on reaching Enlightened and 6 on reaching Illuminated.
+
+The tree runs from stat foundations, through role and meta picks, into power nodes, and ends in branch capstones. Any capstone opens Convergence at the apex, worth 15 percent to every stat and every synergy and 5 more levels on the per-psycast cap.
+
+Convergence in turn opens seven Apotheosis constellations drifting above the tree: Halcyon, Singularity, Penumbra, Empyrean, Chronos, Pandemonium and Consonance. A pawn may walk exactly one of them. Each has its own aura and its own signature power at the end.
+
+[h2]Pilgrimage quests[/h2]
+The higher tiers are reached through two quest chains, and a pawn's route can be set per colonist.
+
+The Trial of the Altar is one hallowed site held against waves of the Ancient Psycaster Order. The Way of the Anima is a longer journey among the anima trees with no fighting in it at all, which is the route a pawn incapable of violence always takes.
+
+The storyteller offers these on its own. On top of that, 60 hours of meditation at Tier I or II guarantees an offer, so the climb cannot stall on bad luck. The climb from Enlightened to Illuminated takes half again as long.
+
+[h2]Enemy psycasters[/h2]
+Hostile psycasters, the Empire especially, can arrive Enlightened: a stronger psylink, extra schools, full psyfocus and faster casting. Which tiers appear, and how often, are separate settings.
+
+[h2]Everything is a setting[/h2]
+[img]https://circinus.sh/api/v1/img/bc6c67f006541fb58a6b.png[/img]
+
+Seven pages of settings, and every one of them carries a line underneath saying in plain words what it does and what happens if you change it. Nothing is hidden behind a tooltip you have to find.
+
+[h2]Balance editor[/h2]
+Turn on dev mode and the psycast tab grows a balance editor. Pick a tree, then change any psycast's primary effect, the synergies it receives, the psycasts it empowers, and the strength of every link, from dropdowns. A preview card redraws with your changes as you make them, showing the real numbers for the selected pawn. Your edits apply at once and are kept in your config. You can export them to a JSON file to share, load someone else's, or throw yours away and go back to the defaults.
+
+[h2]For mod authors[/h2]
+Awakening can be triggered from XML through a def extension that works on hediffs, usable items, incidents, game conditions, thoughts, precepts and quest scripts, so a mod can awaken a pawn without referencing this assembly. Two more defs hand over control: one takes over the tier ladder, including renaming it and switching off the routes you replace, and one applies your own balance numbers on top of the generated ones. Settings that another mod has taken over are marked as such in the settings window.
+
+[h2]Compatibility[/h2]
+Psycasts² reads VPE and VEF psycast schools as it finds them, so it works across the VPE addon ecosystem, including the Sentinel series, without per-addon patches.
+
+Modern Psycasts UI is supported and recommended. Both interfaces get the same features.
+
+If you run ISEKAI RPG Leveling, Psycasts² stops its generic RPG levels from inflating psychic stats.
+
+[h2]Quality of life[/h2]
+[list]
+[*] Psyfocus does not decay on its own by default. It rises with meditation and falls when you spend it.
+[*] Thrones can be used by any psycaster, with no royal title needed.
+[*] Psycasts you have not learned can be hidden behind a question mark, with the ones you already qualify for left visible, so your next choice is always in front of you.
+[*] Small bars in the psycast tab show coma risk, progress to the next psycaster level, and the climb to the next tier.
+[*] Every string the mod shows you lives in a translation file. English ships with 613 of them and translators have a complete template to work from.
+[/list]
+
+[h2]Requirements[/h2]
+RimWorld 1.6, Royalty, Harmony and Vanilla Psycasts Expanded.
+
+Removing it from a running save will strip the levels, specializations and tiers it was tracking.
+
+[hr][/hr]
+
+[b]Thank you Morton for the card texture.[/b]
+
+[i]Bug reports and feedback are very welcome. Please include a log if something has gone wrong.[/i]
+
+[h3]My commitment[/h3]
+[list]
+[*] [b]Active support:[/b] I maintain this mod. Report bugs, compatibility problems or anything behaving oddly in the comments or a discussion thread.
+[*] [b]No abandonware:[/b] I will keep patching and updating this to keep it working.
+[*] [b]No coffee:[/b] I will never ask for donations for AI created or AI assisted mods. I share these hoping they spark joy for someone. Making AI generated content and then begging for money that could go to artists and people more deserving is not responsible AI usage.
+[/list]

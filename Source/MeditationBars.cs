@@ -98,7 +98,9 @@ namespace PsycastSynergies
             if (s.enlightenmentEnabled)
             {
                 float safeTicks = Mathf.Max(0.1f, s.comaSafeHours) * 2500f;
-                float comaFrac = (med?.todayTicks ?? 0) / safeTicks;
+                // Safe window at a full day: the risk is off entirely, so show an empty green bar
+                // rather than a creeping one the player can never actually fill.
+                float comaFrac = s.ComaRiskOff ? 0f : (med?.todayTicks ?? 0) / safeTicks;
                 Color comaCol = comaFrac >= 1f ? Palette.Bad : comaFrac >= 0.7f ? Palette.Gold : Palette.Good;
                 Row(r, ref y, LblComa.Value, mComaVal, comaFrac, comaCol, 1, () => ComaTip(s, med));
             }
@@ -160,7 +162,9 @@ namespace PsycastSynergies
             mPawn = p; mQ = q; mLang = lang;
 
             float today = (med?.todayTicks ?? 0) / 2500f;
-            mComaVal = "PS_BarHoursFmt".Translate(today.ToString("F1"), Mathf.Max(0.1f, s.comaSafeHours).ToString("F0"));
+            mComaVal = s.ComaRiskOff
+                ? "PS_BarComaOff".Translate().ToString()
+                : "PS_BarHoursFmt".Translate(today.ToString("F1"), Mathf.Max(0.1f, s.comaSafeHours).ToString("F0")).ToString();
 
             int maxLevel = PsycastsMod.Settings?.maxLevel ?? 30;
             mMaxed = psy.level >= maxLevel;
@@ -190,6 +194,7 @@ namespace PsycastSynergies
         // Mirrors RollHourly's coma formula so the tooltip states the CURRENT hourly risk.
         private static string ComaTip(PsycastSynergiesSettings s, MeditationData med)
         {
+            if (s.ComaRiskOff) return "PS_BarComaTipOff".Translate();
             float todayH = (med?.todayTicks ?? 0) / 2500f;
             float streakH = (med?.streakTicks ?? 0) / 2500f;
             float risk = Mathf.Max(0f, (todayH - s.comaSafeHours) * s.comaRiskPerHour)

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Psycasts² — Mockup C rev 3: Ascension forecast board (Work-tab plain)</title>
+<style>
+  :root{
+    --backdrop:#0E1013; --band:#151A1E; --border:#2F3337; --hair:#22272b;
+    --fg:#E3E3E3; --dim:#9EA6B3; --dim2:#69727e; --accent:#73BFFF; --gold:#D9B859;
+    --good:#66D966; --bad:#E65959; --violet:#B880F2; --track:#0E1013;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px;background:#08090b;font-family:"Segoe UI",Tahoma,Verdana,sans-serif;font-size:13px;color:var(--fg)}
+  .caption{color:#6c7480;font-size:11px;margin:0 0 8px 2px}
+
+  .win{width:1180px;background:var(--backdrop);border:2px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.055);padding:12px 14px}
+
+  /* ---------- title row, like the Work tab's header ---------- */
+  .titlebar{display:flex;align-items:baseline;gap:12px}
+  .titlebar h1{font-size:22px;font-weight:400;margin:0}
+  .titlebar .x{margin-left:auto;color:var(--dim);font-size:15px}
+  .blurb{color:var(--dim);font-size:12px;margin:2px 0 9px}
+  .tools{display:flex;gap:14px;align-items:center;padding-bottom:10px;font-size:12px;color:var(--dim)}
+  .cb{display:inline-flex;align-items:center;gap:6px}
+  .cb i{width:12px;height:12px;border:1px solid var(--border);background:#101317;display:inline-block}
+  .cb i.on{background:#101317;box-shadow:inset 0 0 0 2px #0E1013,inset 0 0 0 6px var(--dim)}
+  .ctl{padding:2px 9px;border:1px solid var(--border);background:var(--band);color:var(--dim)}
+  .grow{flex:1}
+
+  /* ---------- PawnTable-style header band ---------- */
+  .band{
+    display:flex;background:var(--band);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    font-size:12px;color:var(--dim);
+  }
+  .band > div{flex:1;padding:4px 8px}
+  .band > div + div{border-left:1px solid var(--hair)}
+  .band .n{color:var(--dim2);font-size:11px}
+  .bandwide{display:flex;justify-content:space-between;align-items:baseline;background:var(--band);
+    border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px 8px;font-size:12px;color:var(--dim)}
+  .bandwide .n{color:var(--dim2);font-size:11px}
+
+  /* ---------- ladder ---------- */
+  .ladder{margin-bottom:14px}
+  .cells{display:flex}
+  .cell{flex:1;padding:5px 8px 2px}
+  .cell + .cell{border-left:1px solid var(--hair)}
+  .pip{font-size:12px;line-height:19px;color:var(--dim);white-space:nowrap}
+  .pip b{color:var(--fg);font-weight:400}
+  .pip .eta{color:var(--good)}
+  .pip .eta.far{color:var(--dim)}
+  .pip.stall,.pip.stall b{color:var(--dim2)}
+
+  /* ---------- lanes ---------- */
+  .lanes{display:flex;gap:16px;align-items:flex-start}
+  .lane{flex:1;min-width:0}
+
+  .item{padding:7px 8px 8px;border-bottom:1px solid var(--hair)}
+  .item.alt{background:rgba(255,255,255,.02)}
+  .item.sel{background:rgba(255,255,255,.075)}
+  .itop{display:flex;align-items:baseline;gap:8px}
+  .nm{font-weight:600}
+  .tier{margin-left:auto;font-size:11px;color:var(--dim2)}
+  .tier.t1{color:var(--accent)} .tier.t2{color:var(--gold)} .tier.t3{color:#EFD79A}
+
+  .when{margin:4px 0 1px;font-size:15px}
+  .when.soon{color:var(--good)}
+  .when.far{color:var(--fg)}
+  .when.none{font-size:13px;color:var(--dim2);font-style:italic}
+  .when span{font-size:12px;color:var(--dim)}
+  .basis{font-size:11px;color:var(--dim2)}
+
+  .bar{height:6px;background:var(--track);border:1px solid #000;margin:6px 0 3px}
+  .bar i{display:block;height:100%}
+  .barlbl{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .stat{margin-top:5px;font-size:11px;color:var(--dim2)}
+  .stat b{color:#c7ccd3;font-weight:400;font-variant-numeric:tabular-nums}
+  .flag{font-size:11px;margin-top:4px}
+  .flag.bad{color:var(--bad)} .flag.warn{color:var(--gold)} .flag.idle{color:var(--dim2)}
+  .empty{padding:8px;font-size:12px;color:var(--dim2);line-height:1.45}
+
+  /* ---------- stalled ---------- */
+  .stalled{margin-top:14px}
+  .strow{display:flex;align-items:center;gap:10px;padding:5px 8px;border-bottom:1px solid var(--hair);font-size:12px}
+  .strow.alt{background:rgba(255,255,255,.02)}
+  .strow .who{width:110px;font-weight:600}
+  .strow .why{color:var(--dim);flex:1}
+  .strow .fix{padding:2px 9px;border:1px solid var(--border);background:var(--band);color:var(--dim);font-size:11px}
+
+  /* ---------- selection action bar (mockup B's footer) ---------- */
+  .actions{display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:9px;border-top:1px solid var(--border)}
+  .selname{color:var(--dim);font-size:12px;margin-right:4px}
+  .selname b{color:var(--fg);font-weight:600}
+  .btn{padding:4px 12px;border:1px solid var(--border);background:#2F3337;color:var(--fg);font-size:12px}
+  .btn.right{margin-left:auto}
+
+  .foot{display:flex;gap:16px;align-items:center;margin-top:9px;color:var(--dim2);font-size:11px}
+  .foot b{color:var(--dim);font-weight:400}
+
+  .note{margin:14px 2px 0;color:#5f6874;font-size:11px;max-width:1180px;line-height:1.5}
+  .note b{color:#8b939e;font-weight:600}
+</style>
+</head>
+<body>
+<p class="caption">Mockup C rev 3 — no coloured chrome anywhere on the left, PawnTable-style header bands, sentence case</p>
+
+<div class="win">
+  <div class="titlebar">
+    <h1>Psycasters</h1>
+    <span class="x">✕</span>
+  </div>
+  <p class="blurb">7 tracked · 3 arrive within 3 days · 2 stalled</p>
+
+  <div class="tools">
+    <span class="cb"><i class="on"></i>Show stat lines</span>
+    <span class="cb"><i></i>Include prisoners and slaves</span>
+    <span class="ctl">Sort: soonest ▾</span>
+    <span class="grow"></span>
+    <span class="ctl">Search…</span>
+  </div>
+
+  <!-- ============ LADDER ============ -->
+  <div class="ladder">
+    <div class="band">
+      <div>Dormant <span class="n">3</span></div>
+      <div>Awakened <span class="n">Tier I · 2</span></div>
+      <div>Enlightened <span class="n">Tier II · 1</span></div>
+      <div>Illuminated <span class="n">Tier III · 1</span></div>
+      <div>Transcendent <span class="n">Tier IV and above · 0</span></div>
+    </div>
+    <div class="cells">
+      <div class="cell">
+        <div class="pip"><b>Cyra</b> <span class="eta">1.9 days</span></div>
+        <div class="pip"><b>Tam</b> <span class="eta far">9 days</span></div>
+        <div class="pip stall"><b>Ilsa</b> no estimate</div>
+      </div>
+      <div class="cell">
+        <div class="pip"><b>Vess</b> <span class="eta">1.6 days</span></div>
+        <div class="pip stall"><b>Halden</b> storyteller only</div>
+      </div>
+      <div class="cell">
+        <div class="pip"><b>Rook</b> <span class="eta far">12 days</span></div>
+      </div>
+      <div class="cell">
+        <div class="pip"><b>Meridian</b> <span class="eta">2.4 days</span></div>
+      </div>
+      <div class="cell">
+        <div class="pip stall">Nobody yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LANES ============ -->
+  <div class="lanes">
+
+    <div class="lane">
+      <div class="bandwide"><span>Awakening</span><span class="n">3 on the path</span></div>
+
+      <div class="item">
+        <div class="itop"><span class="nm">Cyra</span><span class="tier">Dormant</span></div>
+        <div class="when soon">1.9 days <span>· 12th of Jugust</span></div>
+        <div class="basis">Meditating 6.5 h/day at a gravestone (Morbid)</div>
+        <div class="bar"><i style="width:68%;background:var(--accent)"></i></div>
+        <div class="barlbl"><span>Guaranteed awakening</span><span>27.4 / 40 h</span></div>
+        <div class="stat">Sensitivity <b>134%</b> · today <b>3.2 h</b> · coma risk <b>none</b></div>
+      </div>
+
+      <div class="item alt">
+        <div class="itop"><span class="nm">Tam</span><span class="tier">Dormant</span></div>
+        <div class="when far">9 days</div>
+        <div class="basis">Meditating 1.2 h/day · Natural</div>
+        <div class="bar"><i style="width:15%;background:var(--accent);opacity:.5"></i></div>
+        <div class="barlbl"><span>Guaranteed awakening</span><span>6.0 / 40 h</span></div>
+        <div class="flag bad">Psychic coma — 6 h left</div>
+        <div class="stat">Sensitivity <b>101%</b> · saturation <b>3.0</b></div>
+      </div>
+
+      <div class="item">
+        <div class="itop"><span class="nm">Ilsa</span><span class="tier">Dormant</span></div>
+        <div class="when none">No estimate</div>
+        <div class="basis">No meditation in her schedule</div>
+        <div class="bar"><i style="width:0%"></i></div>
+        <div class="barlbl"><span>Guaranteed awakening</span><span>0 / 40 h</span></div>
+        <div class="stat">Sensitivity <b>72%</b> · never meditated</div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="bandwide"><span>Tier-up pilgrimage</span><span class="n">3 climbing</span></div>
+
+      <div class="item">
+        <div class="itop"><span class="nm">Vess</span><span class="tier t1">Awakened</span></div>
+        <div class="when soon">1.6 days <span>· to the offer</span></div>
+        <div class="basis">Guaranteed offer at 60 h · Way of the Anima</div>
+        <div class="bar"><i style="width:85%;background:var(--gold)"></i></div>
+        <div class="barlbl"><span>Pilgrimage pity (Tier II)</span><span>51 / 60 h</span></div>
+        <div class="flag warn">Path pick waiting</div>
+        <div class="stat">Level <b>8</b> · psyfocus <b>91%</b> · heat <b>0/40</b></div>
+      </div>
+
+      <div class="item alt">
+        <div class="itop"><span class="nm">Rook</span><span class="tier t2">Enlightened</span></div>
+        <div class="when far">12 days <span>· left to reach the site</span></div>
+        <div class="basis">Trial of the Altar — accepted, travelling</div>
+        <div class="bar"><i style="width:100%;background:var(--gold);opacity:.5"></i></div>
+        <div class="barlbl"><span>Pilgrimage underway</span><span>Tier III</span></div>
+        <div class="stat">Level <b>14</b> · psyfocus <b>47%</b> · heat <b>34/45</b></div>
+      </div>
+
+      <div class="item">
+        <div class="itop"><span class="nm">Halden</span><span class="tier t1">Awakened</span></div>
+        <div class="when none">Storyteller only</div>
+        <div class="basis">Not meditating — the guaranteed offer never builds</div>
+        <div class="bar"><i style="width:7%;background:#4a4235"></i></div>
+        <div class="barlbl"><span>Pilgrimage pity (Tier II)</span><span>4 / 60 h</span></div>
+        <div class="stat">Level <b>5</b> · psyfocus <b>22%</b> · heat <b>8/35</b></div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="bandwide"><span>Transcendence</span><span class="n">1 climbing</span></div>
+
+      <div class="item sel">
+        <div class="itop"><span class="nm">Meridian</span><span class="tier t3">Illuminated</span></div>
+        <div class="when soon">2.4 days <span>· 12th of Jugust</span></div>
+        <div class="basis">Averaging 6.8 h/day over the last 6 days</div>
+        <div class="bar"><i style="width:65%;background:var(--violet)"></i></div>
+        <div class="barlbl"><span>Transcendent IV</span><span>31.2 / 48 h</span></div>
+        <div class="flag warn">1 specialization point unspent</div>
+        <div class="stat">Level <b>22</b> · psyfocus <b>84%</b> · heat <b>12/60</b> · sensitivity <b>148%</b></div>
+      </div>
+
+      <div class="empty">
+        No other Illuminated psycasters yet. Tier III is reached by pilgrimage; the climb past it is pure meditation, and each tier costs 1.6× the last.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ STALLED ============ -->
+  <div class="stalled">
+    <div class="bandwide"><span>Stalled</span><span class="n">2 pawns are not progressing</span></div>
+    <div class="strow">
+      <span class="who">Ilsa</span>
+      <span class="why">Never meditated — no meditation block in her schedule, and no meditation focus nearby.</span>
+      <span class="fix">Open schedule</span>
+    </div>
+    <div class="strow alt">
+      <span class="who">Halden</span>
+      <span class="why">Awakened 14 days ago and has meditated 4 h since. Only the storyteller can offer his Tier II pilgrimage.</span>
+      <span class="fix">Open schedule</span>
+    </div>
+  </div>
+
+  <!-- ============ ACTION BAR ============ -->
+  <div class="actions">
+    <span class="selname">Selected: <b>Meridian</b></span>
+    <span class="btn">Open psycast tab</span>
+    <span class="btn">Constellation</span>
+    <span class="btn">Set default focus ▾</span>
+    <span class="btn right">Jump to pawn</span>
+  </div>
+
+  <div class="foot">
+    <span>Colony meditation today <b>18.7 h</b></span>
+    <span>Awakening window <b>40 h</b></span>
+    <span>Pilgrimage pity <b>60 h</b></span>
+    <span>Transcendence base <b>48 h</b>, growth <b>1.6×</b></span>
+  </div>
+</div>
+
+<p class="note">
+  <b>Rev 3:</b> the coloured square markers are gone from the ladder — nothing on the left edge of any row carries colour now. Section titles became
+  PawnTable-style header bands (dark strip, hairline above and below, counts on the right), the title sits above a plain blurb line with vanilla-style
+  checkboxes beneath it, and selection is a flat highlight. Colour survives only where it is data: tier names, progress fills, the arrival estimate,
+  and warning lines.
+</p>
+</body>
+</html>

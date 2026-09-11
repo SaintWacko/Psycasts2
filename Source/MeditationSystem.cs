@@ -29,6 +29,18 @@ namespace PsycastSynergies
         public int tier;                 // enlightenment tier reached (mirrors the PS_Enlightenment hediff)
         public int pendingPick;          // a tier whose card pick was deferred to reroll via meditation (0 = none)
         public int rerollCount;          // deferred rerolls this pick - each raises psychic-coma risk
+        // Immediate Tier I re-deals taken, ever. This exists ONLY to move the card-pool seed: the seed is
+        // deliberately deterministic (see BuildPool) so a hand cannot be save-scummed, which also meant the
+        // re-deal button rebuilt the pool from an unchanged seed and handed back the identical cards. It is
+        // scribed and never reset, so re-loading cannot undo a re-deal and every later deal for this pawn
+        // starts somewhere new.
+        public int redeals;
+        // NOT scribed, deliberately. Bumped every time a card window for this pawn closes, whatever the exit
+        // (embraced, set aside, deferred, forgone). A queued pick records the value it was queued at, so a
+        // duplicate request created BEFORE the player answered the hand is recognised as stale and dropped
+        // rather than dealing a second one. A save/load empties the pick queue as well, so nothing that
+        // reads this outlives the session that wrote it.
+        public int pickResolves;
         public System.Collections.Generic.List<PsycasterPathDef> cardPaths;   // paths chosen via cards, in tier order (for path respec)
         public string focusType;         // VPE meditation-focus TYPE defName (or building defName) of the last focus meditated at
         public string defaultFocus;      // pawn's personal default focus type - used when meditating at an unattuned building
@@ -38,6 +50,13 @@ namespace PsycastSynergies
         public float medSaturation;      // anti-farming: builds with daily meditation, shrinks breakthrough chance
         public int awakenMeditationTicks; // cumulative meditation toward Awakening (non-psycasters) - feeds the ramp + pity
         public int transcendTicks;        // cumulative post-Illuminated meditation toward the next Transcendent tier (resets on tier-up)
+
+        // Rolling meditation RATE, in ticks per day, folded in at the daily reset (EMA, ~6-day window).
+        // Cumulative counters answer "how far along", this answers "how fast" - together they are the only
+        // honest way to say WHEN a pawn arrives. medDays is the number of full days folded in: while it is
+        // 0 there is nothing to extrapolate from, and the roster says "no estimate" rather than guessing.
+        public float medDayAvg;
+        public int medDays;
 
         // Non-retroactive, tier-scaled auto-stat accumulators (see AutoStats). Each psycaster level adds the
         // base per-level amount scaled by the enlightenment tier at THAT moment, so newer-tier levels are worth more.
@@ -56,6 +75,7 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref tier, "tier", 0);
             Scribe_Values.Look(ref pendingPick, "pendingPick", 0);
             Scribe_Values.Look(ref rerollCount, "rerollCount", 0);
+            Scribe_Values.Look(ref redeals, "redeals", 0);
             Scribe_Collections.Look(ref cardPaths, "cardPaths", LookMode.Def);
             Scribe_Values.Look(ref focusType, "focus");
             Scribe_Values.Look(ref defaultFocus, "defaultFocus");
@@ -65,6 +85,8 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref medSaturation, "medSaturation", 0f);
             Scribe_Values.Look(ref awakenMeditationTicks, "awakenMeditationTicks", 0);
             Scribe_Values.Look(ref transcendTicks, "transcendTicks", 0);
+            Scribe_Values.Look(ref medDayAvg, "medDayAvg", 0f);
+            Scribe_Values.Look(ref medDays, "medDays", 0);
             Scribe_Values.Look(ref autoHeat, "autoHeat", 0f);
             Scribe_Values.Look(ref autoRecovery, "autoRecovery", 0f);
             Scribe_Values.Look(ref autoSensitivity, "autoSensitivity", 0f);
@@ -100,6 +122,11 @@ namespace PsycastSynergies
                     d.medSaturation = d.todayTicks >= satThreshold
                         ? Mathf.Min(d.medSaturation + 1f, 6f)
                         : Mathf.Max(d.medSaturation - 1.5f, 0f);
+                    // Fold the day into the rolling rate BEFORE the reset. A pawn who stops meditating
+                    // decays toward zero over a couple of weeks of empty days, which is what we want:
+                    // the roster's estimate should fade out rather than stay frozen at an old pace.
+                    d.medDayAvg = d.medDays == 0 ? d.todayTicks : Mathf.Lerp(d.medDayAvg, d.todayTicks, 0.35f);
+                    if (d.medDays < 9999) d.medDays++;
                     d.todayTicks = 0;   // daily reset
                 }
             }
@@ -196,6 +223,84 @@ namespace PsycastSynergies
             Messages.Message(p.LabelShortCap + " reset to a non-psycaster, awakening wiped.", p, MessageTypeDefOf.NeutralEvent, false);
         }
 
+        // Replays, for one pawn and in one click, exactly what the 2500-tick boundary does: the meditation
+        // awakening, then the hourly trigger scan on the very next line. That adjacency IS the duplicate-pick
+        // bug - the scan's path-less-psycaster repair sees a pawn who became a psycaster microseconds ago,
+        // holds no path, has nothing pending and no cards recorded, and used to deal them a second hand.
+        // Reaching it the honest way costs 120 in-game hours of meditation.
+        [DebugAction("Psycasts²", "Awakening tick (duplicate-pick check)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Debug_AwakeningTick(Pawn p)
+        {
+            var gc = GameComponent_PsycastSynergies.Instance;
+            var s = PsycastSynergiesMod.Settings;
+            if (p == null || gc == null || s == null) return;
+            var med = gc.GetMed(p, true);
+            int suppressedBefore = JoinAwaken.inFlightSuppressed, staleBefore = staleDropped;
+
+            if (med.awakenThreshold == 0) med.awakenThreshold = Rand.RangeInclusive(5, 10);
+            med.enlightenments = med.awakenThreshold;   // what the "awakening is certain after N hours" pity does
+            Enlighten(p, med, s);                       // RollHourly's non-psycaster branch
+            AwakeningTrigger.HourlyScan(gc);            // the next line of MeditationSystem.Tick, same tick
+
+            int picks = PickCountFor(p);
+            int suppressed = JoinAwaken.inFlightSuppressed - suppressedBefore;
+            int stale = staleDropped - staleBefore;
+            string verdict = picks == 1 ? "OK: one card window" : picks + " card windows - DUPLICATE";
+            Log.Message("[Psycasts²] awakening tick for " + p.LabelShortCap + ": " + verdict
+                + ". Second offers refused while a pick was in flight: " + suppressed
+                + ". Stale queued requests dropped: " + stale + ".");
+            Messages.Message(p.LabelShortCap + ": " + verdict + " (" + suppressed + " second offer(s) refused)",
+                p, picks == 1 ? MessageTypeDefOf.PositiveEvent : MessageTypeDefOf.NegativeEvent, false);
+        }
+
+        // Leaves the pawn exactly as an outside psylink source does - the Empire bestowing ceremony, an anima
+        // tree, a scenario, or a mod that hands out psylinks: a VPE psycaster with no path, no tier and no
+        // awakening. That state used to put them on the BREAKTHROUGH track, so they collected "A flow of
+        // ancient knowledge" letters forever and never climbed the ramp. Follow this with the state report.
+        [DebugAction("Psycasts²", "Give unadopted psylink (no awakening)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Debug_UnadoptedPsylink(Pawn p)
+        {
+            var gc = GameComponent_PsycastSynergies.Instance;
+            if (p == null || gc == null) return;
+            EnsurePsycaster(p);   // sets internalPsylinkChange itself, so the external-psylink postfix stays out
+            var med = gc.GetMed(p, true);
+            med.awakened = false;
+            med.enlightenments = 0;
+            med.awakenMeditationTicks = 0;
+            med.pendingPick = 0;
+            med.cardPaths?.Clear();
+            EnlightenmentTier.SetTier(p, 0, false);
+            Messages.Message(p.LabelShortCap + " now holds a psylink this mod never adopted: no path, no tier.",
+                p, MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        [DebugAction("Psycasts²", "Awakening state (report)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Debug_AwakeningState(Pawn p)
+        {
+            var gc = GameComponent_PsycastSynergies.Instance;
+            var s = PsycastSynergiesMod.Settings;
+            if (p == null || gc == null || s == null) return;
+            var med = gc.GetMed(p, true);
+            var psy = p.Psycasts();
+            int paths = psy?.unlockedPaths?.Count ?? 0;
+            bool awake = IsAwakened(p, med);
+            string branch = !awake ? "AWAKENING RAMP (no breakthroughs)"
+                : med.tier >= 3 ? "breakthroughs + Transcendence climb"
+                : med.tier >= 1 ? "breakthroughs + pilgrimage climb"
+                : "breakthroughs";
+            Log.Message("[Psycasts²] " + p.LabelShortCap + " - awakening state"
+                + "\n  psycaster: " + (psy == null ? "no" : "yes, level " + psy.level)
+                + " | paths: " + paths + " | tier: " + med.tier + " | awakened flag: " + med.awakened
+                + "\n  IsAwakened: " + (awake ? "yes" : "NO") + " -> meditation goes to " + branch
+                + "\n  awakening meditation: " + (med.awakenMeditationTicks / 2500f).ToString("F1") + " h of "
+                + s.awakenGuaranteeHours.ToString("F0") + " h guaranteed"
+                + "\n  pendingPick: " + med.pendingPick + " | cards taken: " + (med.cardPaths?.Count ?? 0)
+                + " | picks answered this session: " + med.pickResolves
+                + "\n  picks in flight for them right now: " + PickCountFor(p));
+            Messages.Message(p.LabelShortCap + ": " + (awake ? "awakened" : "not awakened") + ", on " + branch
+                + ". Full report in the dev console.", p, MessageTypeDefOf.NeutralEvent, false);
+        }
+
         [DebugAction("Psycasts²", "Open 2 picks at once (queue test)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Debug_TwoPicks()
         {
@@ -225,7 +330,7 @@ namespace PsycastSynergies
                     med.streakTicks += 60;
                     med.todayTicks += 60;
                     med.lastMedTick = t;
-                    if (p.Psycasts() == null) med.awakenMeditationTicks += 60;   // cumulative meditation toward Awakening
+                    if (!IsAwakened(p, med)) med.awakenMeditationTicks += 60;    // cumulative meditation toward Awakening
                     else if (med.tier >= 3) med.transcendTicks += 60;             // Illuminated+ psycasters climb toward Transcendence
                     else if (med.tier >= 1) med.pilgrimTicks += 60;               // tier 1-2 climb toward the guaranteed pilgrimage offer
                     if (med.awakenThreshold == 0) med.awakenThreshold = Rand.RangeInclusive(5, 10);
@@ -265,7 +370,11 @@ namespace PsycastSynergies
                     // raised further for each deferred card reroll. EXEMPT on pilgrimage site maps - the
                     // quest forces long daily meditation (well past the safe window), and a coma there would
                     // sabotage the pilgrimage (especially the pacifist anima chain, which must stay safe).
-                    if (!PilgrimRouting.IsPilgrimageMap(p.Map))
+                    // s.ComaRiskOff (the safe window pushed to a full 24h) switches the whole roll off, not
+                    // just the today-hours term: the streak and deferred-reroll terms below do not depend on
+                    // the window and would otherwise keep producing comas on a setting the player has turned
+                    // all the way up to mean "meditation is free".
+                    if (!s.ComaRiskOff && !PilgrimRouting.IsPilgrimageMap(p.Map))
                     {
                         float comaRisk = Mathf.Max(0f, (todayHours - s.comaSafeHours) * s.comaRiskPerHour)
                                        + Mathf.Max(0f, (streakHours - s.comaSafeHours) * s.comaRiskPerHour * 0.5f)
@@ -308,7 +417,7 @@ namespace PsycastSynergies
                     // Non-psycasters are on the AWAKENING ramp: the chance climbs with CUMULATIVE meditation so a
                     // dedicated colonist reaches Tier I within ~a week, with a hard guarantee at the end of the
                     // window. Psycasters use the saturation-scaled streak chance for their full-level breakthroughs.
-                    if (p.Psycasts() == null)
+                    if (!IsAwakened(p, med))
                     {
                         if (TieringControl.MeditationAwakeningDisabled) continue;   // a mod owns awakening now
                         float cumHours = med.awakenMeditationTicks / 2500f;
@@ -321,12 +430,20 @@ namespace PsycastSynergies
                             Enlighten(p, med, s);
                         continue;
                     }
+                    // Breakthroughs are rolled against a base hourly chance that the player sets separately for
+                    // before and after Illuminated, so the late game can be made rarer or richer than the climb
+                    // to it without touching the other half.
+                    float baseChance = med.tier > 3 ? s.transcendChance : s.enlightenmentChance;
+                    // Zero means OFF for this band, checked explicitly rather than left to the arithmetic: the
+                    // streak term below is added to the base, so a base of 0 would still break through after a
+                    // few unbroken hours - a slider dragged to nothing has to mean nothing.
+                    if (baseChance <= 0f) continue;
                     // Saturation from habitual daily meditation scales the whole chance down (anti-farming).
                     float satMult = 1f / (1f + med.medSaturation * s.enlightenmentSaturationFactor);
-                    // Above Illuminated, each Transcendent tier speeds breakthroughs (leveling slows hard past 30) -
-                    // but the 0.6 hard cap holds, so a breakthrough is never guaranteed.
+                    // Above Illuminated, each Transcendent tier speeds breakthroughs further (leveling slows hard
+                    // past 30) - but the 0.6 hard cap holds, so a breakthrough is never guaranteed.
                     float tierMult = med.tier > 3 ? 1f + (med.tier - 3) * s.transcendBreakthroughCurve : 1f;
-                    float chance = Mathf.Min((s.enlightenmentChance + streakHours * s.enlightenmentStreakBonus) * satMult * tierMult * AwakeningTrigger.SurgeMult(p.Map), 0.6f);
+                    float chance = Mathf.Min((baseChance + streakHours * s.enlightenmentStreakBonus) * satMult * tierMult * AwakeningTrigger.SurgeMult(p.Map), 0.6f);
                     if (Rand.Chance(chance)) Enlighten(p, med, s);
                 }
             }
@@ -335,7 +452,11 @@ namespace PsycastSynergies
         private static void Enlighten(Pawn p, MeditationData med, PsycastSynergiesSettings s)
         {
             var psy = p.Psycasts();
-            if (psy != null)
+            // A breakthrough is a reward for a psycaster who has WALKED a path. A pawn holding a psylink they
+            // never awakened into (see IsAwakened) goes on the awakening ramp below instead - handing them
+            // "A flow of ancient knowledge" every hour gave free psycaster levels to a pawn the player was
+            // still waiting to see awaken.
+            if (psy != null && IsAwakened(p, med))
             {
                 if (psy.level < (PsycastsMod.Settings?.maxLevel ?? 30))
                 {
@@ -362,6 +483,21 @@ namespace PsycastSynergies
             {
                 Messages.Message("PS_MsgStirring".Translate(p.LabelShortCap), p, MessageTypeDefOf.PositiveEvent, false);
             }
+        }
+
+        // "Awakened" in THIS mod's sense: the pawn has come through the awakening flow and holds a path.
+        // A pawn can be a VPE psycaster and still not be awakened here - a psylink from the Empire bestowing
+        // ceremony, an anima tree, a scenario or another mod leaves them with a psylink, no path and no tier.
+        // The meditation branch used to be decided on p.Psycasts() alone, which put exactly those pawns on
+        // the BREAKTHROUGH track: they rolled free psycaster levels hour after hour while the awakening ramp
+        // - and the guarantee the player set in settings - never applied to them at all.
+        // The unlockedPaths clause is what keeps old saves right: a pawn who awakened before this field
+        // existed may have neither flag set, but they always hold the path their card gave them.
+        internal static bool IsAwakened(Pawn p, MeditationData med)
+        {
+            if (med != null && (med.awakened || med.tier > 0)) return true;
+            var psy = p?.Psycasts();
+            return psy?.unlockedPaths != null && psy.unlockedPaths.Count > 0;
         }
 
         // Ensure the pawn is a VPE psycaster (creating the psylink + hediff if needed); returns the hediff.
@@ -429,8 +565,83 @@ namespace PsycastSynergies
         // their threshold in one hourly roll, or a mass psylink grant). Opening every Window_Awakening at once
         // stacks them modally and one gets lost, so we QUEUE picks and show exactly one at a time - the next
         // opens when the current one closes (Window_Awakening.PostClose chains here).
-        private struct PickRequest { public Pawn pawn; public int tier; }
+        private struct PickRequest { public Pawn pawn; public int tier; public int stamp; public bool force; }
         private static readonly Queue<PickRequest> pickQueue = new Queue<PickRequest>();
+
+        // thingIDNumber of the pawn whose window is on screen (or built and waiting for the deferred Add
+        // below). An id rather than a Pawn reference: a static holding a Pawn roots the whole dead Game
+        // graph after the player returns to the menu.
+        private static int showingForId = -1;
+
+        // A pick is "in flight" for a pawn while its window is up or a request for it sits in the queue.
+        // Anything that OFFERS a pick must ask this first. RollHourly and AwakeningTrigger.HourlyScan run on
+        // the SAME 2500-tick boundary, one straight after the other, so a pawn who awakens in the first is a
+        // path-less psycaster by the time the second looks at them - which is precisely the signature the
+        // JoinAwaken safety net exists to repair. It queued a second pick for the same pawn in the same tick,
+        // and that second hand opened the moment the first window closed.
+        internal static bool PickInFlight(Pawn p)
+        {
+            if (p == null) return false;
+            if (showingForId == p.thingIDNumber) return true;
+            foreach (var req in pickQueue) if (req.pawn == p) return true;
+            return false;
+        }
+
+        // How many picks this pawn has waiting on them right now: the window on screen plus anything still
+        // queued. Anything other than 0 or 1 is the duplicate bug. Kept apart from PickInFlight so that one
+        // can early-out; this one has to count.
+        internal static int PickCountFor(Pawn p)
+        {
+            if (p == null) return 0;
+            int n = showingForId == p.thingIDNumber ? 1 : 0;
+            foreach (var req in pickQueue) if (req.pawn == p) n++;
+            return n;
+        }
+
+        // Requests dropped by the stale-stamp check in ShowNextPick, for the same debug tool.
+        internal static int staleDropped;
+
+        // False when the pawn already has a pick in flight, so the caller must not queue another. A queued
+        // request at a LOWER tier is upgraded in place rather than dropped, so if two tiers ever do land on
+        // one tick the pawn keeps the better one instead of losing it.
+        private static bool AcceptPick(Pawn p, int tier)
+        {
+            if (showingForId == p.thingIDNumber) return false;
+            bool found = false, upgrade = false;
+            foreach (var req in pickQueue)
+                if (req.pawn == p) { found = true; if (tier > req.tier) upgrade = true; }
+            if (!found) return true;
+            if (upgrade)
+            {
+                int n = pickQueue.Count;
+                for (int i = 0; i < n; i++)
+                {
+                    var req = pickQueue.Dequeue();
+                    if (req.pawn == p && tier > req.tier) req.tier = tier;
+                    pickQueue.Enqueue(req);
+                }
+            }
+            return false;
+        }
+
+        // Every exit from a card window lands here (Window_Awakening.PostClose) - embraced, set aside,
+        // deferred for a re-roll, or forgone for points. Bumping the stamp is what makes any request queued
+        // BEFORE this moment stale, so a duplicate cannot deal a second hand for a pick already answered.
+        internal static void NotePickClosed(Pawn p)
+        {
+            showingForId = -1;
+            var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
+            if (med != null) med.pickResolves++;
+        }
+
+        // Called from GameComponent.FinalizeInit. Statics outlive a Game: a queue left holding pawns from
+        // the previous session would both root that dead graph and open its windows in the new one.
+        internal static void ResetPickQueue()
+        {
+            pickQueue.Clear();
+            pickShowQueued = false;
+            showingForId = -1;
+        }
 
         // Pity threshold (ticks) for the guaranteed pilgrimage offer. 0 = the guarantee is disabled.
         // The tier 2 -> 3 climb runs half again longer than tier 1 -> 2 (mirrors the rarer T3 quests).
@@ -494,7 +705,12 @@ namespace PsycastSynergies
             var quest = QuestUtility.GenerateQuestAndMakeAvailable(def, points);
             if (quest == null) return false;
             QuestUtility.SendLetterQuestAvailable(quest);   // Patch_AutoAcceptPilgrimage accepts + announces
-            med.pilgrimTicks = 0;
+            // Do NOT clear pilgrimTicks here. The pity counter is discharged by SUCCESS, not by the
+            // OFFER: EnlightenmentTier.SetTier zeroes it on the resulting tier change. Clearing it here
+            // meant a player who missed their site had to re-earn the entire guarantee window (60h of
+            // meditation by default) before another pilgrimage could ever be offered. Keeping it means a
+            // FAILED pilgrimage refunds the climb and the offer re-fires on the next hourly roll, which
+            // is what the PilgrimQuestOngoing comment above always claimed ("pity resumes after fail").
             return true;
         }
 
@@ -524,29 +740,63 @@ namespace PsycastSynergies
                     LetterDefOf.PositiveEvent, p);
         }
 
-        public static void OpenPick(Pawn p, int tier)
+        // `force` is for the one caller that legitimately re-opens a pick for a pawn who already has a window
+        // up: the Tier I re-deal button, which enqueues the replacement before it closes its own window.
+        // Everything else goes through the duplicate guard.
+        public static void OpenPick(Pawn p, int tier, bool force = false)
         {
             if (p == null) return;
-            pickQueue.Enqueue(new PickRequest { pawn = p, tier = tier });
+            if (!force && !AcceptPick(p, tier)) return;
+            var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
+            pickQueue.Enqueue(new PickRequest { pawn = p, tier = tier, stamp = med?.pickResolves ?? 0, force = force });
             ShowNextPick();
         }
+
+        // A window has been built and handed to the deferred Add below but is not on the stack yet, so
+        // IsOpen would still say false. Without this a second call in the same frame would deal twice.
+        internal static bool pickShowQueued;
 
         // Opens the next queued pick, but only if no awakening window is currently up (one at a time).
         internal static void ShowNextPick()
         {
-            if (Find.WindowStack == null || Find.WindowStack.IsOpen(typeof(Window_Awakening))) return;
+            if (Find.WindowStack == null || pickShowQueued || Find.WindowStack.IsOpen(typeof(Window_Awakening))) return;
             while (pickQueue.Count > 0)
             {
                 var req = pickQueue.Dequeue();
                 if (req.pawn == null || req.pawn.Dead) continue;
                 var med = GameComponent_PsycastSynergies.Instance?.GetMed(req.pawn, true);
+                // Stale request: the pawn answered a pick between this being queued and being dequeued, so
+                // this is a duplicate of a hand they have already dealt with. Showing it hands out a second
+                // free path.
+                if (!req.force && med != null && med.pickResolves != req.stamp) { staleDropped++; continue; }
                 var st = PsycastSynergiesMod.Settings;
                 int count = st != null && st.cardPickCount > 0 ? st.cardPickCount : (req.tier == 2 ? 5 : 3);
                 bool anyRoll = req.tier >= 3;
                 var pool = BuildPool(req.pawn, med, count, !anyRoll, anyRoll);
                 if (pool.Count == 0) continue;
-                try { Find.WindowStack.Add(new Window_Awakening(req.pawn, pool, req.tier)); return; }
-                catch (System.Exception e) { Log.Warning("[PsycastSynergies] tier-" + req.tier + " pick window failed: " + e); }
+                try
+                {
+                    var win = new Window_Awakening(req.pawn, pool, req.tier);
+                    pickShowQueued = true;
+                    showingForId = req.pawn.thingIDNumber;
+                    // NEVER Add straight from here. One caller is Window_Awakening.PostClose, and vanilla's
+                    // WindowStack.TryRemove runs PostClose AFTER windows.Remove but BEFORE it repairs
+                    // focusedWindow - all while WindowStackOnGUI is walking that same list by index. Adding
+                    // mid-removal corrupts the walk and surfaces as a root-level NRE in OnGUI with a
+                    // truncated stack that names only vanilla. Deferring a frame puts the Add outside both.
+                    LongEventHandler.ExecuteWhenFinished(() =>
+                    {
+                        pickShowQueued = false;
+                        Find.WindowStack?.Add(win);
+                    });
+                    return;
+                }
+                catch (System.Exception e)
+                {
+                    pickShowQueued = false;
+                    showingForId = -1;
+                    Log.Warning("[PsycastSynergies] tier-" + req.tier + " pick window failed: " + e);
+                }
             }
         }
 
@@ -561,7 +811,7 @@ namespace PsycastSynergies
                 if (path.HasAbilities && (unlocked == null || !unlocked.Contains(path))) all.Add(path);
 
             var pick = new List<PsycasterPathDef>();
-            var rng = new System.Random(p.thingIDNumber * 31 + (med?.enlightenments ?? 0) + count * 7 + (anyRoll ? 101 : 0) + (med?.rerollCount ?? 0) * 17);
+            var rng = new System.Random(PoolSeed(p, med, count, anyRoll));
 
             if (theme && !anyRoll)
             {
@@ -590,6 +840,28 @@ namespace PsycastSynergies
             }
             TakeRandom(all, count - pick.Count, pick, rng);   // fill to count
             return pick;
+        }
+
+        // The card hand is DETERMINISTIC on purpose: the same pawn, in the same state, always draws the same
+        // cards, so reloading a save before an awakening cannot be used to shop for a better hand, and a pick
+        // that was set aside with "Choose later" comes back as the hand the player set aside rather than a
+        // free re-roll. Everything that is meant to earn a NEW hand therefore has to be a term in here:
+        //   rerollCount - the paid deferred re-roll (costs a meditation cycle and coma risk)
+        //   redeals     - the one free Tier I re-deal button
+        //   cardPaths   - a pick already embraced, so the NEXT awakening deals fresh even when this pawn's
+        //                 enlightenment count has not moved (dev-forced awakenings did repeat before this)
+        // Terms are hash-combined rather than summed: the old additive form let unrelated terms cancel each
+        // other out, so two different states could land on one seed. The mask keeps the seed non-negative,
+        // because System.Random(int.MinValue) throws on Mono.
+        private static int PoolSeed(Pawn p, MeditationData med, int count, bool anyRoll)
+        {
+            int seed = Gen.HashCombineInt(p?.thingIDNumber ?? 0, med?.enlightenments ?? 0);
+            seed = Gen.HashCombineInt(seed, count);
+            seed = Gen.HashCombineInt(seed, anyRoll ? 1 : 0);
+            seed = Gen.HashCombineInt(seed, med?.rerollCount ?? 0);
+            seed = Gen.HashCombineInt(seed, med?.redeals ?? 0);
+            seed = Gen.HashCombineInt(seed, med?.cardPaths?.Count ?? 0);
+            return seed & 0x7FFFFFFF;
         }
 
         private static void TakeRandom(List<PsycasterPathDef> from, int count, List<PsycasterPathDef> into, System.Random rng)

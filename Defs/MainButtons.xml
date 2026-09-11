@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Psycaster roster. Always visible (the player can move or hide it with a UI-declutter mod);
+       validWithoutMap so it still opens over the world map when the colony is out on a caravan. -->
+  <MainButtonDef>
+    <defName>PS_Psycasters</defName>
+    <label>psycasters</label>
+    <description>List your psycasters and their stats, and see who is on the way to awakening or to their next tier.</description>
+    <tabWindowClass>PsycastSynergies.MainTabWindow_Psycasters</tabWindowClass>
+    <!-- With an icon set, MainButtonWorker.DoButton hides the label and draws this at 32x32 centered;
+         the label still shows in the hover tooltip above the description. -->
+    <iconPath>UI/MainButtons/Psycasters</iconPath>
+    <order>95</order>
+    <validWithoutMap>true</validWithoutMap>
+  </MainButtonDef>
+
+</Defs>

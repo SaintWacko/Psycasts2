@@ -7,6 +7,9 @@
   <PS_Tier_Illuminated>Illuminated</PS_Tier_Illuminated>
   <PS_TierTranscendent>Transcendent {0}</PS_TierTranscendent>
 
+  <!-- Bracketed suffix on the enlightenment hediff, e.g. "Enlightened (Tier II)". {0} is a Roman numeral. -->
+  <PS_TierBracket>Tier {0}</PS_TierBracket>
+
   <!-- Awakening / enlightenment letters and messages -->
   <PS_LetterAwakeningLabel>Psychic awakening</PS_LetterAwakeningLabel>
   <PS_LetterAwakenMeditationText>{0} has awakened as a psycaster. Choose your starting tree.</PS_LetterAwakenMeditationText>
@@ -40,6 +43,8 @@
   <PS_CardForgo>Forgo: +{0} specialization points</PS_CardForgo>
   <PS_CardForgoAll>Forgo the cards: +{0} specialization points</PS_CardForgoAll>
   <PS_CardReroll>Keep meditating - reroll the cards (coma risk)</PS_CardReroll>
+  <PS_CardRedeal>Reroll</PS_CardRedeal>
+  <PS_CardRedealTip>Throw this hand back and deal a new one, right now. You get one reroll per awakening.</PS_CardRedealTip>
   <PS_CardChooseLater>Choose later</PS_CardChooseLater>
   <PS_CardChooseLaterTip>Set the cards aside without choosing. They return while this colonist meditates - or reopen them anytime from the "Psycast path awaits" alert.</PS_CardChooseLaterTip>
   <PS_MsgCardsAside>{0} set the cards aside for now - they return during meditation, or via the alert.</PS_MsgCardsAside>

@@ -39,7 +39,11 @@ namespace PsycastSynergies
             // badge / + / invest-click - VPE keeps its own unlock-click for those.
             bool owned = fLearned.Contains(ability);
             // Fog of war: hide an un-learned skill's identity behind a "?" until it is unlocked.
-            bool fog = settings != null && settings.fogOfWar && !owned;
+            // In "show my next picks" mode a psycast whose prerequisites are already met stays
+            // visible - those are the choices actually in front of the player - and only what lies
+            // deeper up the tree is covered.
+            bool fog = settings != null && settings.fogOfWar && !owned
+                       && !(settings.fogRevealNext && PrereqsMet(ability));
             bool synergiesOn = settings == null || !settings.disableSynergies;
             // Inside a psyset editor the icon's click belongs to the editor ("add to / remove from
             // this set"), so we draw overlays only: no invest button, no "+" hint, no tooltip of
@@ -183,6 +187,15 @@ namespace PsycastSynergies
         private static Pawn fPawn; private static int fFrame = -1, fPsy;
         private static HashSet<AbilityDef> fLearned;
 
+        // Newly-learned detection. An ability that appears in the learned set between two consecutive
+        // frames of the SAME pawn was just unlocked by the player clicking it, so it gets the same
+        // celebration as any other level - in this mod learning a psycast IS its first level, and the
+        // unlock moment previously had no feedback of its own at all. Seeded WITHOUT firing on the first
+        // frame we see a pawn, so opening the tab on an established psycaster never sprays bursts over
+        // their whole tree. Nothing here can fire outside the tab: it only runs while icons are drawing.
+        private static Pawn prevPawn;
+        private static HashSet<AbilityDef> prevLearned;
+
         // Cache the level-numeral text size per level (Text.CalcSize per owned icon per frame otherwise).
         private static readonly Dictionary<int, Vector2> romanSizeCache = new Dictionary<int, Vector2>();
         private static Vector2 RomanSize(int lvl, string roman)
@@ -193,6 +206,19 @@ namespace PsycastSynergies
             return s;
         }
 
+        // Does this pawn already hold a prerequisite of the given psycast? Mirrors VPE's
+        // AbilityExtension_Psycast.PrereqsCompleted (empty list = always reachable, otherwise ANY
+        // prerequisite is enough) but reads the per-frame learned set instead of rescanning
+        // LearnedAbilities per icon.
+        private static bool PrereqsMet(AbilityDef ability)
+        {
+            var pre = PsycastInfo.PsyExtOf(ability)?.prerequisites;
+            if (pre == null || pre.Count == 0) return true;
+            for (int i = 0; i < pre.Count; i++)
+                if (pre[i] != null && fLearned.Contains(pre[i])) return true;
+            return false;
+        }
+
         private static void EnsureFrame(Pawn pawn, CompAbilities comp, Hediff_PsycastAbilities hediff)
         {
             if (fPawn == pawn && fFrame == Time.frameCount && fLearned != null) return;
@@ -200,6 +226,21 @@ namespace PsycastSynergies
             if (fLearned == null) fLearned = new HashSet<AbilityDef>(); else fLearned.Clear();
             if (comp?.LearnedAbilities != null)
                 foreach (var a in comp.LearnedAbilities) if (a?.def != null) fLearned.Add(a.def);
+
+            bool canDiff = prevPawn == pawn && prevLearned != null;
+            if (canDiff && SkillFx.Enabled)
+            {
+                bool sounded = false;   // one noise per frame even if several unlock at once (neurotrainers, dev)
+                foreach (var a in fLearned)
+                {
+                    if (prevLearned.Contains(a)) continue;
+                    SkillFx.Trigger(SkillFx.KeySkill(pawn, a), SkillFx.Grade.Invest);
+                    if (!sounded) { SkillFx.SmallNoise(pawn); sounded = true; }
+                }
+            }
+            if (prevLearned == null) prevLearned = new HashSet<AbilityDef>(); else prevLearned.Clear();
+            foreach (var a in fLearned) prevLearned.Add(a);
+            prevPawn = pawn;
         }
 
     }

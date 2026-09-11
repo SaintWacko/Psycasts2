@@ -1,0 +1,90 @@
+{
+  "destFolder": "37fc16f00422",
+  "name": "Psycasts²",
+  "packageId": "astryl.Psycasts",
+  "structure": {
+    "rootContentDirs": [
+      "Assemblies",
+      "Defs",
+      "Languages",
+      "Patches",
+      "Textures"
+    ],
+    "versionedRoots": [],
+    "hasLoadFolders": false,
+    "hasSource": true,
+    "hasCsproj": true,
+    "hasAssemblies": true,
+    "empty": false
+  },
+  "findings": [
+    {
+      "rule": "missing-dependency",
+      "tone": "warn",
+      "file": "About/About.xml",
+      "message": "Declares 2 hard dependencies not in this workspace: \"Harmony\" and \"Vanilla Psycasts Expanded\". RimWorld refuses to run the mod until they are installed."
+    }
+  ],
+  "dependencies": [
+    {
+      "packageId": "brrainz.harmony",
+      "displayName": "Harmony",
+      "state": "absent"
+    },
+    {
+      "packageId": "VanillaExpanded.VPsycastsE",
+      "displayName": "Vanilla Psycasts Expanded",
+      "state": "absent"
+    }
+  ],
+  "defCount": 46,
+  "defTypes": [
+    {
+      "defType": "HediffDef",
+      "count": 15
+    },
+    {
+      "defType": "ThingDef",
+      "count": 12
+    },
+    {
+      "defType": "FleckDef",
+      "count": 5
+    },
+    {
+      "defType": "QuestScriptDef",
+      "count": 4
+    },
+    {
+      "defType": "PawnKindDef",
+      "count": 3
+    },
+    {
+      "defType": "IncidentDef",
+      "count": 2
+    },
+    {
+      "defType": "FactionDef",
+      "count": 1
+    },
+    {
+      "defType": "GameConditionDef",
+      "count": 1
+    },
+    {
+      "defType": "MeditationFocusDef",
+      "count": 1
+    },
+    {
+      "defType": "SitePartDef",
+      "count": 1
+    },
+    {
+      "defType": "ThoughtDef",
+      "count": 1
+    }
+  ],
+  "csFiles": 68,
+  "elapsedMs": 34,
+  "error": null
+}

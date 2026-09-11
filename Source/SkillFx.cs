@@ -21,6 +21,11 @@ namespace PsycastSynergies
     // Draw sites poll Draw(rect, key) every repaint; the registry holds only live bursts.
     // All visuals + the extra psychic sounds are gated by the skillFx setting (legacy Tick_High
     // click feedback is used when it is off). Textures reuse UI/Sparkle + UI/Glow from the cards.
+    // [StaticConstructorOnStartup]: this type holds static Texture2D fields, and Verse warns about any
+    // such type without the attribute ("all assets must be loaded in the main thread"). The lazy
+    // ContentFinder properties below already load on the main thread in practice, but the attribute is
+    // what silences the warning - same fix as Patch_AuraToggleGizmo.
+    [StaticConstructorOnStartup]
     public static class SkillFx
     {
         public enum Grade { Invest, Mastery, SpecNode, SpecCapstone }

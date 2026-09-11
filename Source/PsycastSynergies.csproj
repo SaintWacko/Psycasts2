@@ -3,7 +3,7 @@
     <TargetFramework>net48</TargetFramework>
     <AssemblyName>PsycastSynergies</AssemblyName>
     <RootNamespace>PsycastSynergies</RootNamespace>
-    <OutputPath>..\..\..\Mods\f98482e31b68\Assemblies\</OutputPath>
+    <OutputPath>..\Assemblies\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>

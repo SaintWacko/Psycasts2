@@ -52,8 +52,17 @@ namespace PsycastSynergies
             suppressRect = rect; suppressFrame = Time.frameCount;
         }
 
+        // Rect match with a half-pixel tolerance rather than Unity's exact float compare: the host
+        // hands the same Rect to DrawAbility and to TipRegion, but a layout that rounds or offsets
+        // between the two would silently stop the suppression working.
         public static bool ShouldSuppress(Rect rect)
-            => suppressFrame == Time.frameCount && rect == suppressRect;
+        {
+            if (suppressFrame != Time.frameCount) return false;   // cheap gate: this runs for EVERY tooltip in the game
+            return Mathf.Abs(rect.x - suppressRect.x) < 0.5f
+                && Mathf.Abs(rect.y - suppressRect.y) < 0.5f
+                && Mathf.Abs(rect.width - suppressRect.width) < 0.5f
+                && Mathf.Abs(rect.height - suppressRect.height) < 0.5f;
+        }
 
         private static string Pct(float frac) => (frac * 100f).ToString("0.#") + "%";
 
@@ -735,12 +744,18 @@ namespace PsycastSynergies
     }
 
     // Suppress VPE / Modern Psycasts UI's plain tooltip for the exact icon we're showing our card over.
+    //
+    // TARGET CHOICE MATTERS. This used to patch TipRegion(Rect, Func<string>, int), which is a
+    // three-instruction wrapper that just forwards to TipRegion(Rect, TipSignal). Mono inlines
+    // methods that small, so at some call sites the prefix never ran and BOTH tooltips drew - the
+    // duplicated-mouseover bug. TipRegion(Rect, TipSignal) is the real sink: it is far too large to
+    // inline, and every other overload funnels through it, so one patch covers them all.
     [HarmonyPatch]
     public static class Patch_SuppressVpeAbilityTip
     {
         static System.Reflection.MethodBase TargetMethod()
             => AccessTools.Method(typeof(TooltipHandler), nameof(TooltipHandler.TipRegion),
-                new[] { typeof(Rect), typeof(Func<string>), typeof(int) });
+                new[] { typeof(Rect), typeof(TipSignal) });
 
         static bool Prefix(Rect rect) => !SkillTooltip.ShouldSuppress(rect);
     }

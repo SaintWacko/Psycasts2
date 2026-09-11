@@ -20,6 +20,9 @@ namespace PsycastSynergies
         // Fog of war: hide the identity of every un-learned psycast on the tree behind a "?" cover
         // until it is unlocked. Off by default.
         public bool fogOfWar = false;
+        // Fog of war sub-mode: a psycast whose prerequisites are already met stays visible, so the
+        // choices actually in front of the player are readable and only what lies deeper is covered.
+        public bool fogRevealNext = true;
         // Turn off the whole cross-ability synergy / empower system: skills scale from their OWN
         // invested levels only, and the tooltip/hover no longer show "receives from" / "empowers".
         // Off by default (synergies stay on).
@@ -94,7 +97,9 @@ namespace PsycastSynergies
         public bool noAwakenedStartingPawns = true;      // starting colonists (new-game character creation) never roll the random Awakened+ spawn
         public bool cardRevealAll = false;               // awakening cards: the other cards can be turned by hand and any revealed card re-picked
         public int cardPickCount = 0;                    // cards dealt per tier-up pick: 0 = auto (3, or 5 at Tier II), 1-8 = fixed
-        public float enlightenmentChance = 0.02f;        // base hourly Enlightenment chance while meditating
+        public bool cardRedeal = true;                   // first awakening: offer one Reroll once a card is face up
+        public float enlightenmentChance = 0.02f;        // base hourly breakthrough chance while meditating, BEFORE Illuminated (0 = none)
+        public float transcendChance = 0.02f;            // the same, for a psycaster PAST Illuminated (tier 4+); transcendBreakthroughCurve still stacks on top
         public float enlightenmentStreakBonus = 0.015f;  // +chance per consecutive hour meditated
         public float transcendBreakthroughCurve = 0.15f; // each Transcendent tier (>3) multiplies breakthrough chance by +this (still hard-capped at 0.6)
         public float enlightenmentFrac = 1.0f;           // psycaster XP burst = this × next-level XP (1.0 = a full level)
@@ -102,9 +107,13 @@ namespace PsycastSynergies
         public float awakenGuaranteeHours = 36f;          // cumulative meditation hours that GUARANTEE a non-psycaster Awakens (~1 week dedicated)
         public float pilgrimGuaranteeHours = 60f;         // tier 1-2 meditation hours that GUARANTEE a pilgrimage offer (T3 climb x1.5; 0 = storyteller only)
         public bool medBars = true;                       // compact meditation progress bars in the psycast tab
-        public bool alwaysShowPsycastTab = true;          // show the psycast tab on every player humanlike; non-psycasters get the dormant card
+        // Psycaster roster (main tab) view prefs. Not settings-tab rows - they are toggled in the window
+        // itself and persisted here so the view survives a restart.
+        public bool rosterIncludeCaptives = true;         // list prisoners and slaves (display only - they never accrue)
+        public bool rosterHideIncapable = false;          // hide pawns who cannot awaken at all
+        public float rosterX, rosterY, rosterW, rosterH;  // remembered window rect (rosterW 0 = never placed)
         public int balanceVersion = 0;                   // one-time stamp so changed balance defaults override a stale saved config
-        public float comaSafeHours = 6f;                 // hours/day of meditation before coma risk starts
+        public float comaSafeHours = 6f;                 // hours/day of meditation before coma risk starts (24 = never risky)
         public float comaRiskPerHour = 0.05f;            // psychic-coma chance per hour over the safe window
         public int tier2SpecPoints = 4;                  // bonus specialization points granted on reaching Tier II
         public int tier3SpecPoints = 6;                  // bonus specialization points granted on reaching Tier III
@@ -133,6 +142,12 @@ namespace PsycastSynergies
         public int animaPilgrimT2Sites = 3;              // number of anima sites at T2
         public int animaPilgrimT3Sites = 4;              // number of anima sites at T3 (last is the giant tree)
 
+        // A full day of safe meditation means the window can never be exceeded, so the whole coma
+        // system is off. Checked explicitly rather than left to the arithmetic, because the streak
+        // term and the deferred-reroll term add risk independently of today's hours and would keep
+        // trickling comas in at 24h.
+        public bool ComaRiskOff => comaSafeHours >= 24f;
+
         public override void ExposeData()
         {
             base.ExposeData();
@@ -141,6 +156,7 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref maxSkillLevel, "maxSkillLevel", 10);
             Scribe_Values.Look(ref skillFx, "skillFx", true);
             Scribe_Values.Look(ref fogOfWar, "fogOfWar", false);
+            Scribe_Values.Look(ref fogRevealNext, "fogRevealNext", true);
             Scribe_Values.Look(ref disableSynergies, "disableSynergies", false);
             Scribe_Values.Look(ref disableSkillReset, "disableSkillReset", false);
             Scribe_Values.Look(ref disableSpecReset, "disableSpecReset", false);
@@ -186,7 +202,9 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref noAwakenedStartingPawns, "noAwakenedStartingPawns", true);
             Scribe_Values.Look(ref cardRevealAll, "cardRevealAll", false);
             Scribe_Values.Look(ref cardPickCount, "cardPickCount", 0);
+            Scribe_Values.Look(ref cardRedeal, "cardRedeal", true);
             Scribe_Values.Look(ref enlightenmentChance, "enlightenmentChance", 0.02f);
+            Scribe_Values.Look(ref transcendChance, "transcendChance", 0.02f);
             Scribe_Values.Look(ref enlightenmentStreakBonus, "enlightenmentStreakBonus", 0.015f);
             Scribe_Values.Look(ref transcendBreakthroughCurve, "transcendBreakthroughCurve", 0.15f);
             Scribe_Values.Look(ref enlightenmentFrac, "enlightenmentFrac", 1.0f);
@@ -194,7 +212,12 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref awakenGuaranteeHours, "awakenGuaranteeHours", 36f);
             Scribe_Values.Look(ref pilgrimGuaranteeHours, "pilgrimGuaranteeHours", 60f);
             Scribe_Values.Look(ref medBars, "medBars", true);
-            Scribe_Values.Look(ref alwaysShowPsycastTab, "alwaysShowPsycastTab", true);
+            Scribe_Values.Look(ref rosterIncludeCaptives, "rosterIncludeCaptives", true);
+            Scribe_Values.Look(ref rosterHideIncapable, "rosterHideIncapable", false);
+            Scribe_Values.Look(ref rosterX, "rosterX", 0f);
+            Scribe_Values.Look(ref rosterY, "rosterY", 0f);
+            Scribe_Values.Look(ref rosterW, "rosterW", 0f);
+            Scribe_Values.Look(ref rosterH, "rosterH", 0f);
             Scribe_Values.Look(ref comaSafeHours, "comaSafeHours", 6f);
             Scribe_Values.Look(ref comaRiskPerHour, "comaRiskPerHour", 0.05f);
             Scribe_Values.Look(ref tier2SpecPoints, "tier2SpecPoints", 4);
@@ -265,51 +288,66 @@ namespace PsycastSynergies
             PerfCache.Bump();
         }
 
-        private static readonly Color TabGold = new Color(0.96f, 0.81f, 0.36f);
-        private static readonly string[] SettingsTabs = { "Skills", "Specializations", "Meditation", "Pilgrimage", "Enemies" };
+        // Category list down the left of the settings window. Names are keys: "PS_SetTab_" + entry.
+        private static readonly string[] SettingsTabs =
+            { "Levels", "Paths", "Meditation", "Pilgrimage", "Enemies", "Display", "Advanced" };
         private float[] settingsTabH;            // per-tab remembered scroll height (avoids stale-height clipping)
+
+        private const float RailWidth = 176f;
+        private const float RailRowH = 32f;
+        private const float SubIndent = 24f;
+        private static readonly Color HintColor = new Color(0.72f, 0.74f, 0.76f);
 
         public override void DoSettingsWindowContents(Rect inRect)
         {
             if (settingsTabH == null || settingsTabH.Length != SettingsTabs.Length)
             {
                 settingsTabH = new float[SettingsTabs.Length];
-                for (int k = 0; k < settingsTabH.Length; k++) settingsTabH[k] = 1200f;
+                // Generous first-frame guess: the real height is measured at the end of the first draw.
+                // Guessing SHORT costs a frame of clipping; see the maxOneColumn note below for why it
+                // used to cost the whole page.
+                for (int k = 0; k < settingsTabH.Length; k++) settingsTabH[k] = 3000f;
             }
-            // Stylized tab bar. We DETECT a tab click here but apply it only AFTER drawing the content, so the
-            // active tab is constant across this frame's IMGUI event passes - switching mid-frame swaps the
-            // control set between passes and leaves the new tab's sliders/checkboxes dead.
+            // Category rail. We DETECT a click here but apply it only AFTER drawing the content, so the
+            // active category is constant across this frame's IMGUI event passes - switching mid-frame swaps
+            // the control set between passes and leaves the new page's sliders and checkboxes dead.
             int clicked = -1;
-            float tabW = inRect.width / SettingsTabs.Length;
+            Text.Anchor = TextAnchor.MiddleLeft;
             for (int i = 0; i < SettingsTabs.Length; i++)
             {
-                var tr = new Rect(inRect.x + i * tabW, inRect.y, tabW, 30f);
-                bool active = settingsTab == i;
-                if (active) Widgets.DrawBoxSolid(tr, new Color(0.17f, 0.155f, 0.10f));
-                else if (Mouse.IsOver(tr)) Widgets.DrawHighlight(tr);
-                Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = active ? TabGold : new Color(0.82f, 0.86f, 0.94f);
-                Widgets.Label(tr, ("PS_SetTab_" + SettingsTabs[i]).Translate());
-                GUI.color = Color.white;
-                if (active) Widgets.DrawBoxSolid(new Rect(tr.x, tr.yMax - 3f, tr.width, 3f), TabGold);
-                if (Widgets.ButtonInvisible(tr)) clicked = i;
+                var row = new Rect(inRect.x, inRect.y + i * RailRowH, RailWidth, RailRowH);
+                if (settingsTab == i) Widgets.DrawHighlightSelected(row);
+                else if (Mouse.IsOver(row)) Widgets.DrawHighlight(row);
+                Widgets.Label(new Rect(row.x + 8f, row.y, row.width - 14f, row.height),
+                    ("PS_SetTab_" + SettingsTabs[i]).Translate());
+                if (Widgets.ButtonInvisible(row)) clicked = i;
             }
             Text.Anchor = TextAnchor.UpperLeft;
-            Widgets.DrawLineHorizontal(inRect.x, inRect.y + 31f, inRect.width);
+            Widgets.DrawLineVertical(inRect.x + RailWidth + 8f, inRect.y, inRect.height);
 
             int tab = settingsTab;
-            var body = new Rect(inRect.x, inRect.y + 38f, inRect.width, inRect.height - 38f);
-            var viewRect = new Rect(0f, 0f, body.width - 20f, settingsTabH[tab]);
+            float bodyX = inRect.x + RailWidth + 20f;
+            var body = new Rect(bodyX, inRect.y, inRect.xMax - bodyX, inRect.height);
+            var viewRect = new Rect(0f, 0f, body.width - 20f, Mathf.Max(body.height, settingsTabH[tab]));
             Widgets.BeginScrollView(body, ref settingsScroll, viewRect);
             var l = new Listing_Standard();
+            // MUST be set. Listing_Standard breaks into a SECOND COLUMN as soon as content passes
+            // listingRect.height, and NewColumn() resets curY to 0 - so a page taller than our guessed
+            // viewRect drew its remainder off to the right (invisible), and then reported a tiny
+            // CurHeight back into settingsTabH. Next frame the viewRect was tiny, so the break happened
+            // one row in, and the page collapsed to nothing but its first section head. The pages only
+            // grew past the old 1200px guess when every setting gained a visible explanation line.
+            l.maxOneColumn = true;
             l.Begin(viewRect);
             switch (tab)
             {
-                case 0: TabSkills(l); break;
-                case 1: TabSpec(l); break;
+                case 0: TabLevels(l); break;
+                case 1: TabPaths(l); break;
                 case 2: TabMeditation(l); break;
                 case 3: TabPilgrimage(l); break;
-                default: TabEnemies(l); break;
+                case 4: TabEnemies(l); break;
+                case 5: TabDisplay(l); break;
+                default: TabAdvanced(l); break;
             }
             settingsTabH[tab] = l.CurHeight + 24f;
             l.End();
@@ -318,83 +356,116 @@ namespace PsycastSynergies
             if (clicked >= 0 && clicked != settingsTab) { settingsTab = clicked; settingsScroll = Vector2.zero; }
         }
 
-        // ---- tooltip-aware setting widgets ----
+        // ---- setting widgets: a control, then a plain-English line under it ----
         static void Head(Listing_Standard l, string text)
         {
-            l.Gap(8f);
+            l.Gap(10f);
             Text.Font = GameFont.Medium;
-            GUI.color = TabGold;
-            Widgets.Label(l.GetRect(28f), text);
-            GUI.color = Color.white;
+            Widgets.Label(l.GetRect(30f), text);
             Text.Font = GameFont.Small;
             l.GapLine(4f);
         }
-        static void FS(Listing_Standard l, string label, ref float val, float min, float max, string tip, bool integer = false)
+
+        // The always-visible explanation under a setting. Small grey text, wrapped to the column.
+        // Font follows Text.TinyFontSupported: Text.Font's setter silently substitutes Small when tiny
+        // text is turned off, and measuring with one font while drawing in another mis-sizes the row.
+        static void Hint(Listing_Standard l, string text, bool indent = true)
+        {
+            if (text.NullOrEmpty()) return;
+            GameFont pf = Text.Font;
+            Text.Font = Text.TinyFontSupported ? GameFont.Tiny : GameFont.Small;
+            float pad = indent ? SubIndent : 0f;
+            float w = l.ColumnWidth - pad;
+            float h = Text.CalcHeight(text, w);
+            Rect r = l.GetRect(h);
+            r.xMin += pad;
+            GUI.color = HintColor;
+            Widgets.Label(r, text);
+            GUI.color = Color.white;
+            Text.Font = pf;
+            l.Gap(4f);
+        }
+
+        // Listing.Indent only moves the cursor, it does NOT narrow the column, so a rect drawn after it
+        // would overrun the scrollbar. Shrink ColumnWidth by the same amount and put it back.
+        static void PushSub(Listing_Standard l) { l.Indent(SubIndent); l.ColumnWidth -= SubIndent; }
+        static void PopSub(Listing_Standard l) { l.Outdent(SubIndent); l.ColumnWidth += SubIndent; }
+
+        static void FS(Listing_Standard l, string label, ref float val, float min, float max, string hint, bool integer = false)
         {
             Rect r = l.GetRect(Text.LineHeight);
-            if (Mouse.IsOver(r)) Widgets.DrawHighlight(r);
-            if (!tip.NullOrEmpty()) TooltipHandler.TipRegion(r, tip);
             Widgets.Label(r, label);
             float v = l.Slider(val, min, max);
             val = integer ? Mathf.Round(v) : v;
+            Hint(l, hint, false);
         }
-        static void IS(Listing_Standard l, string label, ref int val, int min, int max, string tip)
+        static void IS(Listing_Standard l, string label, ref int val, int min, int max, string hint)
         {
-            float f = val; FS(l, label, ref f, min, max, tip, true); val = Mathf.RoundToInt(f);
+            float f = val; FS(l, label, ref f, min, max, hint, true); val = Mathf.RoundToInt(f);
         }
-        static void CB(Listing_Standard l, string label, ref bool val, string tip) => l.CheckboxLabeled(label, ref val, tip);
+        static void CB(Listing_Standard l, string label, ref bool val, string hint)
+        {
+            l.CheckboxLabeled(label, ref val);
+            Hint(l, hint);
+        }
 
-        void TabSkills(Listing_Standard l)
+        void TabLevels(Listing_Standard l)
         {
             var s = Settings;
             // Snapshot every toggle-gated row's visibility at the START of the draw. A RimWorld checkbox
             // flips its bool mid-frame (on MouseUp); if a conditional slider below it were gated on the
             // LIVE bool, the control set would differ between IMGUI passes, corrupting GUI state and
-            // blanking a chunk of the tab. Reading a frame-start snapshot keeps the control set stable.
-            bool synOn = !s.disableSynergies, showCostRow = s.scaleCost, showCapRow = s.overrideVpeLevelCap;
-            Head(l, "PS_SetH_SkillLeveling".Translate());
+            // blanking a chunk of the page. Reading a frame-start snapshot keeps the control set stable.
+            bool showLinkPct = !s.disableSynergies, showCostRow = s.scaleCost;
+
+            Head(l, "PS_SetH_Spending".Translate());
             FS(l, "PS_SetPerLevel".Translate((s.perLevelPct * 100f).ToString("F0")), ref s.perLevelPct, 0f, 0.25f,
                 "PS_SetPerLevelTip".Translate());
-            CB(l, "PS_SetDisableSynergies".Translate(), ref s.disableSynergies, "PS_SetDisableSynergiesTip".Translate());
-            if (synOn)
-                FS(l, "PS_SetSynergyPct".Translate((s.synergyPct * 100f).ToString("F0")), ref s.synergyPct, 0f, 0.10f,
-                    "PS_SetSynergyPctTip".Translate());
             IS(l, "PS_SetMaxSkillLevel".Translate(s.maxSkillLevel), ref s.maxSkillLevel, 1, 30,
                 "PS_SetMaxSkillLevelTip".Translate());
             IS(l, "PS_SetPsyLevelsPerSkill".Translate(s.psyLevelsPerSkillLevel), ref s.psyLevelsPerSkillLevel, 1, 10,
                 "PS_SetPsyLevelsPerSkillTip".Translate());
-            CB(l, "PS_SetSkillFx".Translate(), ref s.skillFx, "PS_SetSkillFxTip".Translate());
-            CB(l, "PS_SetFogOfWar".Translate(), ref s.fogOfWar, "PS_SetFogOfWarTip".Translate());
-            CB(l, "PS_SetMedBars".Translate(), ref s.medBars, "PS_SetMedBarsTip".Translate());
-            CB(l, "PS_SetAlwaysTab".Translate(), ref s.alwaysShowPsycastTab, "PS_SetAlwaysTabTip".Translate());
-            CB(l, "PS_SetNoSkillReset".Translate(), ref s.disableSkillReset, "PS_SetNoSkillResetTip".Translate());
+            CB(l, "PS_SetAutoStats".Translate(), ref s.autoPsycasterStats, "PS_SetAutoStatsTip".Translate());
 
-            Head(l, "PS_SetH_WhatScales".Translate());
+            Head(l, "PS_SetH_Links".Translate());
+            // Stored as "disableSynergies" but shown the way round a player reads it.
+            bool linksOn = !s.disableSynergies;
+            CB(l, "PS_SetLinks".Translate(), ref linksOn, "PS_SetLinksTip".Translate());
+            s.disableSynergies = !linksOn;
+            if (showLinkPct)
+            {
+                PushSub(l);
+                FS(l, "PS_SetSynergyPct".Translate((s.synergyPct * 100f).ToString("F0")), ref s.synergyPct, 0f, 0.10f,
+                    "PS_SetSynergyPctTip".Translate());
+                PopSub(l);
+            }
+
+            Head(l, "PS_SetH_WhatChanges".Translate());
             CB(l, "PS_SetScalePower".Translate(), ref s.scalePower, "PS_SetScalePowerTip".Translate());
             CB(l, "PS_SetScaleRadius".Translate(), ref s.scaleRadius, "PS_SetScaleRadiusTip".Translate());
             CB(l, "PS_SetScaleDuration".Translate(), ref s.scaleDuration, "PS_SetScaleDurationTip".Translate());
             CB(l, "PS_SetScaleBuff".Translate(), ref s.scaleBuffStrength, "PS_SetScaleBuffTip".Translate());
             CB(l, "PS_SetScaleSens".Translate(), ref s.scaleViaSensitivity, "PS_SetScaleSensTip".Translate());
 
-            Head(l, "PS_SetH_CostCaps".Translate());
+            Head(l, "PS_SetH_Cost".Translate());
             CB(l, "PS_SetScaleCost".Translate(), ref s.scaleCost, "PS_SetScaleCostTip".Translate());
             if (showCostRow)
-                FS(l, "PS_SetCostPerLevel".Translate((s.costPerLevelPct * 100f).ToString("F0")), ref s.costPerLevelPct, 0f, 0.25f, "PS_SetCostPerLevelTip".Translate());
-            CB(l, "PS_SetLevelCap".Translate(), ref s.overrideVpeLevelCap, "PS_SetLevelCapTip".Translate());
-            if (showCapRow)
-                IS(l, "PS_SetLevelCapVal".Translate(s.vpeLevelCap), ref s.vpeLevelCap, 30, 500, "PS_SetLevelCapValTip".Translate());
-            CB(l, "PS_SetIsekai".Translate(), ref s.suppressIsekaiPsycastStats, "PS_SetIsekaiTip".Translate());
-            CB(l, "PS_SetAutoStats".Translate(), ref s.autoPsycasterStats,
-                "PS_SetAutoStatsTip".Translate());
-
-            Head(l, "PS_SetH_Performance".Translate());
-            CB(l, "PS_SetPerfCache".Translate(), ref s.perfCaching, "PS_SetPerfCacheTip".Translate());
-            ApplyVpeLevelCap();
+            {
+                PushSub(l);
+                FS(l, "PS_SetCostPerLevel".Translate((s.costPerLevelPct * 100f).ToString("F0")), ref s.costPerLevelPct, 0f, 0.25f,
+                    "PS_SetCostPerLevelTip".Translate());
+                PopSub(l);
+            }
         }
 
-        void TabSpec(Listing_Standard l)
+        void TabPaths(Listing_Standard l)
         {
             var s = Settings;
+            Head(l, "PS_SetH_GettingTrees".Translate());
+            CB(l, "PS_SetLockPaths".Translate(), ref s.lockPathsToEnlightenment, "PS_SetLockPathsTip".Translate());
+            CB(l, "PS_SetNoGeneReq".Translate(), ref s.disableGeneRequirements, "PS_SetNoGeneReqTip".Translate());
+            CB(l, "PS_SetMechTrees".Translate(), ref s.enableLockedMechTrees, "PS_SetMechTreesTip".Translate());
+
             Head(l, "PS_SetH_SpecPoints".Translate());
             IS(l, "PS_SetSpecLevels".Translate(s.specLevelsPerPoint), ref s.specLevelsPerPoint, 1, 20,
                 "PS_SetSpecLevelsTip".Translate());
@@ -404,25 +475,227 @@ namespace PsycastSynergies
                 "PS_SetTier2PointsTip".Translate());
             IS(l, "PS_SetTier3Points".Translate(s.tier3SpecPoints), ref s.tier3SpecPoints, 0, 16,
                 "PS_SetTier3PointsTip".Translate());
+        }
+
+        void TabMeditation(Listing_Standard l)
+        {
+            var s = Settings;
+            // Frame-start snapshots (see TabLevels) so a checkbox flip can't reshape the control set mid-draw.
+            bool showBreak = s.enlightenmentEnabled, showGate = s.gateUntieredPsylinks, showTrans = s.transcendEnabled;
+
+            Head(l, "PS_SetH_EarningLevels".Translate());
+            FS(l, "PS_SetCastXp".Translate(s.castXpPerTier.ToString("F0"), (s.castXpPerTier * 3f).ToString("F0")), ref s.castXpPerTier, 0f, 60f,
+                "PS_SetCastXpTip".Translate(), true);
+            FS(l, "PS_SetMedXp".Translate((s.meditationXpMult * 100f).ToString("F0")), ref s.meditationXpMult, 0f, 1f,
+                "PS_SetMedXpTip".Translate());
+            CB(l, "PS_SetNoDecay".Translate(), ref s.noPsyfocusDecay, "PS_SetNoDecayTip".Translate());
+
+            Head(l, "PS_SetH_Breakthroughs".Translate());
+            CB(l, "PS_SetBreakthroughs".Translate(), ref s.enlightenmentEnabled, "PS_SetBreakthroughsTip".Translate());
+            if (TieringControl.MeditationAwakeningDisabled)
+                ModOverrideNote(l, "PS_Ovr_MedAwaken".Translate());
+            if (showBreak)
+            {
+                PushSub(l);
+                FS(l, "PS_SetBreakChance".Translate((s.enlightenmentChance * 100f).ToString("F1")), ref s.enlightenmentChance, 0f, 0.15f,
+                    "PS_SetBreakChanceTip".Translate());
+                FS(l, "PS_SetBreakChanceTrans".Translate((s.transcendChance * 100f).ToString("F1")), ref s.transcendChance, 0f, 0.15f,
+                    "PS_SetBreakChanceTransTip".Translate());
+                FS(l, "PS_SetBreakSize".Translate((s.enlightenmentFrac * 100f).ToString("F0")), ref s.enlightenmentFrac, 0.2f, 1.5f,
+                    "PS_SetBreakSizeTip".Translate());
+                FS(l, "PS_SetFalloff".Translate(s.enlightenmentSaturationFactor.ToString("F2")), ref s.enlightenmentSaturationFactor, 0f, 1.5f,
+                    "PS_SetFalloffTip".Translate());
+                FS(l, "PS_SetGuarantee".Translate(s.awakenGuaranteeHours.ToString("F0")), ref s.awakenGuaranteeHours, 6f, 120f,
+                    "PS_SetGuaranteeTip".Translate(), true);
+                FS(l, "PS_SetPilgrimPity".Translate(s.pilgrimGuaranteeHours.ToString("F0")), ref s.pilgrimGuaranteeHours, 0f, 240f,
+                    "PS_SetPilgrimPityTip".Translate(), true);
+                FS(l, "PS_SetTransCurve".Translate((1f + s.transcendBreakthroughCurve).ToString("F2")), ref s.transcendBreakthroughCurve, 0f, 0.4f,
+                    "PS_SetTransCurveTip".Translate());
+                PopSub(l);
+            }
+
+            Head(l, "PS_SetH_TooLong".Translate());
+            // Snapshot BEFORE the slider draws, so the row set below cannot change mid-frame.
+            bool comaOff = s.ComaRiskOff;
+            FS(l, comaOff ? "PS_SetSafeWindowOff".Translate().ToString()
+                          : "PS_SetSafeWindow".Translate(s.comaSafeHours.ToString("F1")).ToString(),
+                ref s.comaSafeHours, 0f, 24f, "PS_SetSafeWindowTip".Translate());
+            if (!comaOff)
+                FS(l, "PS_SetComaRisk".Translate((s.comaRiskPerHour * 100f).ToString("F0")), ref s.comaRiskPerHour, 0f, 0.25f,
+                    "PS_SetComaRiskTip".Translate());
+
+            Head(l, "PS_SetH_Cards".Translate());
+            CB(l, "PS_SetRevealAll".Translate(), ref s.cardRevealAll, "PS_SetRevealAllTip".Translate());
+            IS(l, "PS_SetCardCount".Translate(s.cardPickCount <= 0 ? "PS_SetCardCountAuto".Translate().ToString() : s.cardPickCount.ToString()), ref s.cardPickCount, 0, 8,
+                "PS_SetCardCountTip".Translate());
+            CB(l, "PS_SetCardRedeal".Translate(), ref s.cardRedeal, "PS_SetCardRedealTip".Translate());
+            Hint(l, "PS_SetChooseLaterInfo".Translate(), false);
+
+            Head(l, "PS_SetH_WhoBecomes".Translate());
+            CB(l, "PS_SetEmpirePsylink".Translate(), ref s.empirePsylinkIntegrate, "PS_SetEmpirePsylinkTip".Translate());
+            if (TieringControl.ExternalPsylinkAwakeningDisabled)
+                ModOverrideNote(l, "PS_Ovr_ExtPsylink".Translate());
+            CB(l, "PS_SetPsylinkGate".Translate(), ref s.gateUntieredPsylinks, "PS_SetPsylinkGateTip".Translate());
+            if (TieringControl.PsylinkGateDisabled)
+                ModOverrideNote(l, "PS_Ovr_PsylinkGate".Translate());
+            else if (TieringControl.RandomAwakenedSpawnsDisabled)
+                ModOverrideNote(l, "PS_Ovr_RandomSpawns".Translate());
+            if (showGate)
+            {
+                PushSub(l);
+                FS(l, "PS_SetSpawnChance".Translate((s.awakenedSpawnChance * 100f).ToString("F0")), ref s.awakenedSpawnChance, 0f, 1f,
+                    "PS_SetSpawnChanceTip".Translate());
+                CB(l, "PS_SetNoStartAwakened".Translate(), ref s.noAwakenedStartingPawns, "PS_SetNoStartAwakenedTip".Translate());
+                PopSub(l);
+            }
+
+            Head(l, "PS_SetH_Transcendence".Translate());
+            CB(l, "PS_SetTranscend".Translate(), ref s.transcendEnabled, "PS_SetTranscendTip".Translate());
+            if (TieringControl.TranscendenceDisabled)
+                ModOverrideNote(l, "PS_Ovr_Transcend".Translate());
+            if (showTrans)
+            {
+                PushSub(l);
+                FS(l, "PS_SetTransBase".Translate(s.transcendBaseHours.ToString("F0")), ref s.transcendBaseHours, 12f, 200f,
+                    "PS_SetTransBaseTip".Translate(), true);
+                FS(l, "PS_SetTransGrowth".Translate(s.transcendGrowth.ToString("F2")), ref s.transcendGrowth, 1.1f, 3f,
+                    "PS_SetTransGrowthTip".Translate());
+                IS(l, "PS_SetForgoPoints".Translate(s.transcendForgoPoints), ref s.transcendForgoPoints, 0, 12,
+                    "PS_SetForgoPointsTip".Translate());
+                PopSub(l);
+            }
+        }
+
+        // Amber note under a setting row when a loaded mod's TieringOverrideDef has taken a path over.
+        private static void ModOverrideNote(Listing_Standard l, string what)
+        {
+            GameFont pf = Text.Font;
+            Text.Font = Text.TinyFontSupported ? GameFont.Tiny : GameFont.Small;
+            string msg = "PS_SetOverrideNote".Translate(what, TieringControl.OwnerLabel);
+            float w = l.ColumnWidth - SubIndent;
+            Rect r = l.GetRect(Text.CalcHeight(msg, w));
+            r.xMin += SubIndent;
+            GUI.color = new Color(1f, 0.72f, 0.35f);
+            Widgets.Label(r, msg);
+            GUI.color = Color.white;
+            Text.Font = pf;
+            l.Gap(4f);
+        }
+
+        void TabPilgrimage(Listing_Standard l)
+        {
+            var s = Settings;
+            if (TieringControl.PilgrimagesDisabled)
+                ModOverrideNote(l, "PS_Ovr_Pilgrimages".Translate());
+
+            Head(l, "PS_SetH_Altar".Translate());
+            float days = s.pilgrimDailyMaxTicks > 0 ? (float)s.pilgrimMeditationTicks / s.pilgrimDailyMaxTicks : 0f;
+            IS(l, "PS_SetAltarTotal".Translate((s.pilgrimMeditationTicks / 2500f).ToString("F1"), days.ToString("F1")), ref s.pilgrimMeditationTicks, 10000, 150000,
+                "PS_SetAltarTotalTip".Translate());
+            IS(l, "PS_SetAltarDaily".Translate((s.pilgrimDailyMaxTicks / 2500f).ToString("F1")), ref s.pilgrimDailyMaxTicks, 0, 60000,
+                "PS_SetAltarDailyTip".Translate());
+            IS(l, "PS_SetWaveInterval".Translate((s.pilgrimWaveIntervalTicks / 2500f).ToString("F1")), ref s.pilgrimWaveIntervalTicks, 5000, 120000,
+                "PS_SetWaveIntervalTip".Translate());
+            FS(l, "PS_SetWaveScale".Translate(s.pilgrimWavePointsScale.ToString("F2")), ref s.pilgrimWavePointsScale, 0.1f, 3f,
+                "PS_SetWaveScaleTip".Translate());
+
+            Head(l, "PS_SetH_AltarFocus".Translate());
+            Hint(l, "PS_SetT3Throne".Translate(), false);
+            string[][] focusOpts = {
+                new[]{"PS_PilgrimThrone","PS_SetFocus_PilgrimThrone".Translate().ToString()},
+                new[]{"PS_PilgrimAltar","PS_SetFocus_PilgrimAltar".Translate().ToString()},
+                new[]{"MeditationSpot","PS_SetFocus_MeditationSpot".Translate().ToString()},
+                new[]{"Throne","PS_SetFocus_Throne".Translate().ToString()},
+                new[]{"GrandThrone","PS_SetFocus_GrandThrone".Translate().ToString()},
+            };
+            foreach (var opt in focusOpts)
+                if (l.RadioButton(opt[1], s.pilgrimFocusDef == opt[0])) s.pilgrimFocusDef = opt[0];
+
+            Head(l, "PS_SetH_Anima".Translate());
+            IS(l, "PS_SetAnimaPerSite".Translate((s.animaPilgrimTicksPerSite / 2500f).ToString("F1")), ref s.animaPilgrimTicksPerSite, 10000, 150000,
+                "PS_SetAnimaPerSiteTip".Translate());
+            IS(l, "PS_SetAnimaT2".Translate(s.animaPilgrimT2Sites), ref s.animaPilgrimT2Sites, 1, 6,
+                "PS_SetAnimaT2Tip".Translate());
+            IS(l, "PS_SetAnimaT3".Translate(s.animaPilgrimT3Sites), ref s.animaPilgrimT3Sites, 1, 8,
+                "PS_SetAnimaT3Tip".Translate());
+        }
+
+        void TabEnemies(Listing_Standard l)
+        {
+            var s = Settings;
+            bool showEnemy = s.enemyTiersEnabled;   // frame-start snapshot (see TabLevels)
+            Head(l, "PS_SetH_Enemies".Translate());
+            CB(l, "PS_SetEnemyTiers".Translate(), ref s.enemyTiersEnabled, "PS_SetEnemyTiersTip".Translate());
+            if (TieringControl.EnemyTiersDisabled)
+                ModOverrideNote(l, "PS_Ovr_EnemyTiers".Translate());
+            if (showEnemy)
+            {
+                PushSub(l);
+                CB(l, "PS_SetEnemyT1".Translate(), ref s.enemyTier1, "PS_SetEnemyT1Tip".Translate());
+                CB(l, "PS_SetEnemyT2".Translate(), ref s.enemyTier2, "PS_SetEnemyT2Tip".Translate());
+                CB(l, "PS_SetEnemyT3".Translate(), ref s.enemyTier3, "PS_SetEnemyT3Tip".Translate());
+                FS(l, "PS_SetEnemyFreq".Translate((s.enemyTierFreq * 100f).ToString("F0")), ref s.enemyTierFreq, 0f, 1f,
+                    "PS_SetEnemyFreqTip".Translate());
+                CB(l, "PS_SetEnemyAscension".Translate(), ref s.enemyAscension, "PS_SetEnemyAscensionTip".Translate());
+                PopSub(l);
+            }
+        }
+
+        void TabDisplay(Listing_Standard l)
+        {
+            var s = Settings;
+            bool showFogMode = s.fogOfWar;   // frame-start snapshot (see TabLevels)
+
+            Head(l, "PS_SetH_Tree".Translate());
+            CB(l, "PS_SetFogOfWar".Translate(), ref s.fogOfWar, "PS_SetFogOfWarTip".Translate());
+            if (showFogMode)
+            {
+                PushSub(l);
+                CB(l, "PS_SetFogNext".Translate(), ref s.fogRevealNext, "PS_SetFogNextTip".Translate());
+                PopSub(l);
+            }
+            CB(l, "PS_SetHidePaths".Translate(), ref s.hideUnlearnedPaths, "PS_SetHidePathsTip".Translate());
+            CB(l, "PS_SetSkillFx".Translate(), ref s.skillFx, "PS_SetSkillFxTip".Translate());
+            CB(l, "PS_SetMedBars".Translate(), ref s.medBars, "PS_SetMedBarsTip".Translate());
+
+            Head(l, "PS_SetH_NoTakeBacks".Translate());
+            CB(l, "PS_SetNoSkillReset".Translate(), ref s.disableSkillReset, "PS_SetNoSkillResetTip".Translate());
             CB(l, "PS_SetNoSpecReset".Translate(), ref s.disableSpecReset, "PS_SetNoSpecResetTip".Translate());
 
-            Head(l, "PS_SetH_PathAccess".Translate());
-            CB(l, "PS_SetNoGeneReq".Translate(), ref s.disableGeneRequirements, "PS_SetNoGeneReqTip".Translate());
-            CB(l, "PS_SetMechTrees".Translate(), ref s.enableLockedMechTrees, "PS_SetMechTreesTip".Translate());
-            CB(l, "PS_SetLockPaths".Translate(), ref s.lockPathsToEnlightenment, "PS_SetLockPathsTip".Translate());
-            CB(l, "PS_SetHidePaths".Translate(), ref s.hideUnlearnedPaths, "PS_SetHidePathsTip".Translate());
+            Head(l, "PS_SetH_Speed".Translate());
+            CB(l, "PS_SetPerfCache".Translate(), ref s.perfCaching, "PS_SetPerfCacheTip".Translate());
+        }
+
+        void TabAdvanced(Listing_Standard l)
+        {
+            var s = Settings;
+            bool showCapRow = s.overrideVpeLevelCap;   // frame-start snapshot (see TabLevels)
+            bool linksOff = s.disableSynergies;
+
+            Head(l, "PS_SetH_LevelCap".Translate());
+            CB(l, "PS_SetLevelCap".Translate(), ref s.overrideVpeLevelCap, "PS_SetLevelCapTip".Translate());
+            if (showCapRow)
+            {
+                PushSub(l);
+                IS(l, "PS_SetLevelCapVal".Translate(s.vpeLevelCap), ref s.vpeLevelCap, 30, 500, "PS_SetLevelCapValTip".Translate());
+                PopSub(l);
+            }
+            ApplyVpeLevelCap();
+
+            Head(l, "PS_SetH_OtherMods".Translate());
+            CB(l, "PS_SetIsekai".Translate(), ref s.suppressIsekaiPsycastStats, "PS_SetIsekaiTip".Translate());
 
             Head(l, "PS_SetH_SynergyGraph".Translate());
-            if (s.disableSynergies)
+            if (linksOff)
             {
                 GUI.color = new Color(1f, 0.72f, 0.35f);
                 l.Label("PS_SetSynDisabledNote".Translate());
                 GUI.color = Color.white;
             }
-            l.Label("PS_SetSynFrozen".Translate());
+            Hint(l, "PS_SetSynFrozen".Translate(), false);
             int tuned = PlayerTuning.Count;
-            l.Label("PS_SetSynRetune".Translate()
-                + (tuned > 0 ? " " + "PS_SetSynEditsActive".Translate(tuned) : new TaggedString("")));
+            Hint(l, "PS_SetSynRetune".Translate()
+                + (tuned > 0 ? " " + "PS_SetSynEditsActive".Translate(tuned) : new TaggedString("")), false);
             if (l.ButtonText("PS_SetSynRebuild".Translate()))
             {
                 s.frozenSyn?.Clear();
@@ -431,7 +704,7 @@ namespace PsycastSynergies
             }
 
             Head(l, "PS_SetH_BalanceEdits".Translate());
-            l.Label("PS_SetBalanceInfo".Translate());
+            Hint(l, "PS_SetBalanceInfo".Translate(), false);
             // OPEN BETA: the public button EXPORTS the player's edits as a shareable JSON (grouped per
             // tree and addon tree) to send the author. Non-destructive; nothing is baked or cleared.
             if (l.ButtonText(tuned > 0 ? "PS_SetShareN".Translate(tuned).ToString() : "PS_SetShare".Translate().ToString()))
@@ -496,148 +769,6 @@ namespace PsycastSynergies
                     Find.WindowStack.Add(new Dialog_Confirm("PS_SetDiscardTitle".Translate(),
                         "PS_SetDiscardBody".Translate(tuned),
                         () => { PlayerTuning.ResetAll(); PsycastSynergiesMod.Instance?.WriteSettings(); }));
-            }
-        }
-
-        void TabMeditation(Listing_Standard l)
-        {
-            var s = Settings;
-            // Frame-start snapshots (see TabSkills) so a checkbox flip can't reshape the control set mid-draw.
-            bool showBreak = s.enlightenmentEnabled, showGate = s.gateUntieredPsylinks, showTrans = s.transcendEnabled;
-            Head(l, "PS_SetH_PsycastXp".Translate());
-            FS(l, "PS_SetCastXp".Translate(s.castXpPerTier.ToString("F0"), (s.castXpPerTier * 3f).ToString("F0")), ref s.castXpPerTier, 0f, 60f,
-                "PS_SetCastXpTip".Translate(), true);
-            FS(l, "PS_SetMedXp".Translate((s.meditationXpMult * 100f).ToString("F0")), ref s.meditationXpMult, 0f, 1f,
-                "PS_SetMedXpTip".Translate());
-            CB(l, "PS_SetNoDecay".Translate(), ref s.noPsyfocusDecay,
-                "PS_SetNoDecayTip".Translate());
-
-            Head(l, "PS_SetH_Flow".Translate());
-            CB(l, "PS_SetBreakthroughs".Translate(), ref s.enlightenmentEnabled,
-                "PS_SetBreakthroughsTip".Translate());
-            if (TieringControl.MeditationAwakeningDisabled)
-                ModOverrideNote(l, "PS_Ovr_MedAwaken".Translate());
-            if (showBreak)
-            {
-                FS(l, "PS_SetBreakSize".Translate((s.enlightenmentFrac * 100f).ToString("F0")), ref s.enlightenmentFrac, 0.2f, 1.5f,
-                    "PS_SetBreakSizeTip".Translate());
-                FS(l, "PS_SetFalloff".Translate(s.enlightenmentSaturationFactor.ToString("F2")), ref s.enlightenmentSaturationFactor, 0f, 1.5f,
-                    "PS_SetFalloffTip".Translate());
-                FS(l, "PS_SetGuarantee".Translate(s.awakenGuaranteeHours.ToString("F0")), ref s.awakenGuaranteeHours, 6f, 120f,
-                    "PS_SetGuaranteeTip".Translate(), true);
-                FS(l, "PS_SetPilgrimPity".Translate(s.pilgrimGuaranteeHours.ToString("F0")), ref s.pilgrimGuaranteeHours, 0f, 240f,
-                    "PS_SetPilgrimPityTip".Translate(), true);
-                FS(l, "PS_SetTransCurve".Translate((1f + s.transcendBreakthroughCurve).ToString("F2")), ref s.transcendBreakthroughCurve, 0f, 0.4f,
-                    "PS_SetTransCurveTip".Translate());
-            }
-
-            Head(l, "PS_SetH_Comas".Translate());
-            FS(l, "PS_SetSafeWindow".Translate(s.comaSafeHours.ToString("F1")), ref s.comaSafeHours, 0f, 16f,
-                "PS_SetSafeWindowTip".Translate());
-            FS(l, "PS_SetComaRisk".Translate((s.comaRiskPerHour * 100f).ToString("F0")), ref s.comaRiskPerHour, 0f, 0.25f,
-                "PS_SetComaRiskTip".Translate());
-
-            Head(l, "PS_SetH_Cards".Translate());
-            CB(l, "PS_SetEmpirePsylink".Translate(), ref s.empirePsylinkIntegrate,
-                "PS_SetEmpirePsylinkTip".Translate());
-            if (TieringControl.ExternalPsylinkAwakeningDisabled)
-                ModOverrideNote(l, "PS_Ovr_ExtPsylink".Translate());
-            CB(l, "PS_SetPsylinkGate".Translate(), ref s.gateUntieredPsylinks,
-                "PS_SetPsylinkGateTip".Translate());
-            if (TieringControl.PsylinkGateDisabled)
-                ModOverrideNote(l, "PS_Ovr_PsylinkGate".Translate());
-            else if (TieringControl.RandomAwakenedSpawnsDisabled)
-                ModOverrideNote(l, "PS_Ovr_RandomSpawns".Translate());
-            if (showGate)
-                FS(l, "PS_SetSpawnChance".Translate((s.awakenedSpawnChance * 100f).ToString("F0")), ref s.awakenedSpawnChance, 0f, 1f,
-                    "PS_SetSpawnChanceTip".Translate());
-            if (showGate)
-                CB(l, "PS_SetNoStartAwakened".Translate(), ref s.noAwakenedStartingPawns,
-                    "PS_SetNoStartAwakenedTip".Translate());
-            CB(l, "PS_SetRevealAll".Translate(), ref s.cardRevealAll,
-                "PS_SetRevealAllTip".Translate());
-            IS(l, "PS_SetCardCount".Translate(s.cardPickCount <= 0 ? "PS_SetCardCountAuto".Translate().ToString() : s.cardPickCount.ToString()), ref s.cardPickCount, 0, 8,
-                "PS_SetCardCountTip".Translate());
-            l.Label("PS_SetChooseLaterInfo".Translate());
-
-            Head(l, "PS_SetH_Transcendence".Translate());
-            CB(l, "PS_SetTranscend".Translate(), ref s.transcendEnabled,
-                "PS_SetTranscendTip".Translate());
-            if (TieringControl.TranscendenceDisabled)
-                ModOverrideNote(l, "PS_Ovr_Transcend".Translate());
-            if (showTrans)
-            {
-                FS(l, "PS_SetTransBase".Translate(s.transcendBaseHours.ToString("F0")), ref s.transcendBaseHours, 12f, 200f,
-                    "PS_SetTransBaseTip".Translate(), true);
-                FS(l, "PS_SetTransGrowth".Translate(s.transcendGrowth.ToString("F2")), ref s.transcendGrowth, 1.1f, 3f,
-                    "PS_SetTransGrowthTip".Translate());
-                IS(l, "PS_SetForgoPoints".Translate(s.transcendForgoPoints), ref s.transcendForgoPoints, 0, 12,
-                    "PS_SetForgoPointsTip".Translate());
-            }
-        }
-
-        // Amber note under a setting row when a loaded mod's TieringOverrideDef has taken a path over.
-        private static void ModOverrideNote(Listing_Standard l, string what)
-        {
-            GUI.color = new Color(1f, 0.72f, 0.35f);
-            l.Label("PS_SetOverrideNote".Translate(what, TieringControl.OwnerLabel));
-            GUI.color = Color.white;
-        }
-
-        void TabPilgrimage(Listing_Standard l)
-        {
-            if (TieringControl.PilgrimagesDisabled)
-                ModOverrideNote(l, "PS_Ovr_Pilgrimages".Translate());
-            var s = Settings;
-            Head(l, "PS_SetH_Altar".Translate());
-            float days = s.pilgrimDailyMaxTicks > 0 ? (float)s.pilgrimMeditationTicks / s.pilgrimDailyMaxTicks : 0f;
-            IS(l, "PS_SetAltarTotal".Translate((s.pilgrimMeditationTicks / 2500f).ToString("F1"), days.ToString("F1")), ref s.pilgrimMeditationTicks, 10000, 150000,
-                "PS_SetAltarTotalTip".Translate());
-            IS(l, "PS_SetAltarDaily".Translate((s.pilgrimDailyMaxTicks / 2500f).ToString("F1")), ref s.pilgrimDailyMaxTicks, 0, 60000,
-                "PS_SetAltarDailyTip".Translate());
-            IS(l, "PS_SetWaveInterval".Translate((s.pilgrimWaveIntervalTicks / 2500f).ToString("F1")), ref s.pilgrimWaveIntervalTicks, 5000, 120000,
-                "PS_SetWaveIntervalTip".Translate());
-            FS(l, "PS_SetWaveScale".Translate(s.pilgrimWavePointsScale.ToString("F2")), ref s.pilgrimWavePointsScale, 0.1f, 3f,
-                "PS_SetWaveScaleTip".Translate());
-
-            Head(l, "PS_SetH_AltarFocus".Translate());
-            l.Label("PS_SetT3Throne".Translate());
-            string[][] focusOpts = {
-                new[]{"PS_PilgrimThrone","PS_SetFocus_PilgrimThrone".Translate().ToString()},
-                new[]{"PS_PilgrimAltar","PS_SetFocus_PilgrimAltar".Translate().ToString()},
-                new[]{"MeditationSpot","PS_SetFocus_MeditationSpot".Translate().ToString()},
-                new[]{"Throne","PS_SetFocus_Throne".Translate().ToString()},
-                new[]{"GrandThrone","PS_SetFocus_GrandThrone".Translate().ToString()},
-            };
-            foreach (var opt in focusOpts)
-                if (l.RadioButton(opt[1], s.pilgrimFocusDef == opt[0])) s.pilgrimFocusDef = opt[0];
-
-            Head(l, "PS_SetH_Anima".Translate());
-            IS(l, "PS_SetAnimaPerSite".Translate((s.animaPilgrimTicksPerSite / 2500f).ToString("F1")), ref s.animaPilgrimTicksPerSite, 10000, 150000,
-                "PS_SetAnimaPerSiteTip".Translate());
-            IS(l, "PS_SetAnimaT2".Translate(s.animaPilgrimT2Sites), ref s.animaPilgrimT2Sites, 1, 6, "PS_SetAnimaT2Tip".Translate());
-            IS(l, "PS_SetAnimaT3".Translate(s.animaPilgrimT3Sites), ref s.animaPilgrimT3Sites, 1, 8,
-                "PS_SetAnimaT3Tip".Translate());
-        }
-
-        void TabEnemies(Listing_Standard l)
-        {
-            var s = Settings;
-            bool showEnemy = s.enemyTiersEnabled;   // frame-start snapshot (see TabSkills)
-            Head(l, "PS_SetH_Enemies".Translate());
-            CB(l, "PS_SetEnemyTiers".Translate(), ref s.enemyTiersEnabled,
-                "PS_SetEnemyTiersTip".Translate());
-            if (TieringControl.EnemyTiersDisabled)
-                ModOverrideNote(l, "PS_Ovr_EnemyTiers".Translate());
-            if (showEnemy)
-            {
-                CB(l, "PS_SetEnemyT1".Translate(), ref s.enemyTier1, "PS_SetEnemyT1Tip".Translate());
-                CB(l, "PS_SetEnemyT2".Translate(), ref s.enemyTier2, "PS_SetEnemyT2Tip".Translate());
-                CB(l, "PS_SetEnemyT3".Translate(), ref s.enemyTier3, "PS_SetEnemyT3Tip".Translate());
-                FS(l, "PS_SetEnemyFreq".Translate((s.enemyTierFreq * 100f).ToString("F0")), ref s.enemyTierFreq, 0f, 1f,
-                    "PS_SetEnemyFreqTip".Translate());
-                CB(l, "PS_SetEnemyAscension".Translate(), ref s.enemyAscension,
-                    "PS_SetEnemyAscensionTip".Translate());
             }
         }
 

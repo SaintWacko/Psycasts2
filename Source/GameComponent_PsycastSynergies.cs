@@ -152,6 +152,10 @@ namespace PsycastSynergies
             ChargeStore.ClearAll();
             CastScaling.ClearAmplifyWindows();
             PerfCache.Bump();
+            // The card window's deferred Add clears this itself, but it would stay latched if the game
+            // were quit between the queue and the frame that runs it - and a latched flag blocks every
+            // future pick for the whole process. Statics outlive a Game; this one must not.
+            MeditationSystem.ResetPickQueue();
 
             // Re-apply the PS_Enlightenment hediff from the mirrored MeditationData.tier so existing colonists
             // keep their enlightenment tier across save/load. Enemies re-roll on spawn, so no migration there.

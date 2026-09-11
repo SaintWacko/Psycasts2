@@ -1,0 +1,21 @@
+{
+  "entries": [
+    {
+      "symptom": "Removing a stray Windows reserved-name file (\"nul\") that got written into .circinus/ in this mod folder.",
+      "cause": "Deleted the empty \"nul\" file from .circinus/. It was a zero-byte artifact of a shell redirect to the Windows null device; nothing referenced it and nothing else in the folder changed."
+    },
+    {
+      "symptom": "Writing the Steam Workshop description for Psycasts² to the sidecar, with a rendered panel image, from what the defs and source actually ship.",
+      "cause": "Workshop description written to .circinus/workshop-description.txt with two rendered panel images. Every number in it comes from the defs or settings defaults. Filed #353 for a stale Apotheosis string found on the way."
+    },
+    {
+      "symptom": "Second verification run of the awakening-card fix, this time standalone on the VPE-native tab (no Modern Psycasts UI), to cover the transpiler and FillTab patches that path uses.",
+      "cause": "Standalone VPE-native run finished clean: no error class attributed to this mod, only VPE's usual PathBG_Archon.dds. The tab-layout check was visual and I have no verdict on it yet."
+    },
+    {
+      "symptom": "Play-verifying the duplicate-awakening-card fix in game with the new \"Awakening tick\" dev tool, alongside Modern Psycasts UI.",
+      "cause": "Duplicate awakening cards verified fixed in game (run #1, one window, guard refused the second offer). Card #345 moved to Shipped. Only error class in the run was VPE's own PathBG_Archon.dds.",
+      "version": "1.3.1"
+    }
+  ]
+}

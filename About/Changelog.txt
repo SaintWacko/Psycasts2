@@ -1,0 +1,50 @@
+Changelog
+Psycasts²
+
+## 1.2.5 - 2026-09-08
+
+- Separate breakthrough chance sliders for before and after Illuminated
+
+Notes
+1.2.5
+
+## 1.2.4 - 2026-09-08
+
+- Re-deal on a first awakening, and the window-add-during-PostClose hazard it exposed
+- Unlocking a psycast now fires the level-up burst; it never had one
+- Safe meditation can be set to a full 24h, which switches comas off entirely
+
+Notes
+1.2.4
+
+## 1.2.3 - 2026-09-08
+
+- Rebuilt settings pages collapsed to just their first heading (Listing_Standard column break)
+- Both tooltips drew on a psycast icon: the suppression patch targeted a method Mono inlines
+- Removed individual pawn meditation gizmos as they can be changed on the main bar menu.
+- Added per skill fog of war.
+
+Notes
+1.2.3
+
+## 1.2.2 - 2026-09-08
+
+- Updated hediff name.
+
+Notes
+1.2.2
+
+## 1.2.1 - 2026-09-07
+
+Fixed
+- Pilgrimage quests never end: quest.End(sendStandardLetter:) binds to the QuestGen extension, NREs, latches the quest Ongoing forever
+- Anima pilgrimage: one timed-out incomplete site leaves the quest Ongoing forever (same lockout as #155, different route)
+
+Added
+- Pilgrimage refire: pity progress now refunded on failure, and generation bail-outs attach an end part
+
+Housekeeping
+- Psycasters main tab replaces the dormant psycast tab (roster, stats, arrival estimates)
+
+Notes
+1.2.1

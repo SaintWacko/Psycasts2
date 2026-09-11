@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Psycasts² — Mockup B: Master / detail</title>
+<style>
+  :root{
+    --backdrop:#0E1013; --panel:#1B1F23; --panelHi:#22272C; --border:#2F3337;
+    --fg:#E3E3E3; --dim:#9EA6B3; --accent:#73BFFF; --gold:#D9B859;
+    --good:#66D966; --bad:#E65959; --violet:#B880F2; --track:#0E1013;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px;background:#08090b;font-family:"Segoe UI",Tahoma,Verdana,sans-serif;font-size:13px;color:var(--fg)}
+  .caption{color:#6c7480;font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px 2px}
+
+  .win{width:1180px;background:var(--backdrop);border:2px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.055);padding:10px}
+  .titlebar{display:flex;align-items:baseline;gap:10px;padding:2px 4px 10px}
+  .titlebar h1{font-size:21px;font-weight:600;margin:0}
+  .titlebar .sub{color:var(--dim);font-size:12px}
+  .titlebar .x{margin-left:auto;color:var(--dim);font-size:15px;padding:0 4px}
+
+  .body{display:flex;gap:10px;height:600px}
+
+  /* ---------- left rail ---------- */
+  .rail{width:308px;flex:none;background:var(--panel);border:1px solid var(--border);display:flex;flex-direction:column}
+  .railtop{padding:7px;border-bottom:1px solid var(--border);display:flex;gap:5px}
+  .search{flex:1;padding:3px 8px;border:1px solid var(--border);background:#101317;color:#6c7480}
+  .funnel{padding:3px 9px;border:1px solid var(--border);background:var(--panelHi);color:var(--dim)}
+  .railgroup{
+    padding:5px 9px;background:#101317;border-bottom:1px solid var(--border);border-top:1px solid var(--border);
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);
+    display:flex;justify-content:space-between;
+  }
+  .railgroup span{color:#5f6874}
+  .row{padding:7px 9px;border-bottom:1px solid #191d21;display:flex;gap:8px;align-items:flex-start}
+  .row.sel{background:rgba(115,191,255,.08);box-shadow:inset 2px 0 0 var(--accent)}
+  .port{width:30px;height:30px;flex:none;background:#2a2f35;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:#79828f;font-size:11px}
+  .rowmain{flex:1;min-width:0}
+  .rowtop{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  .nm{font-weight:600}
+  .lv{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .rowsub{display:flex;justify-content:space-between;font-size:11px;color:#69727e;margin:1px 0 3px}
+  .bar{height:5px;background:var(--track);border:1px solid #000}
+  .bar i{display:block;height:100%}
+
+  /* ---------- detail ---------- */
+  .detail{flex:1;background:var(--panel);border:1px solid var(--border);display:flex;flex-direction:column;min-width:0}
+  .dhead{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:#171b1f}
+  .bigport{width:60px;height:60px;flex:none;background:#2a2f35;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:#79828f}
+  .dh1{font-size:19px;font-weight:600;line-height:24px}
+  .dh2{color:var(--dim);font-size:12px;margin-top:2px}
+  .chips{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+  .chip{padding:1px 7px;font-size:11px;border:1px solid #3a4048;color:var(--dim)}
+  .chip.tier{color:#EFD79A;border-color:rgba(239,215,154,.5)}
+  .chip.path{color:var(--accent);border-color:rgba(115,191,255,.4)}
+  .chip.warn{color:var(--gold);border-color:rgba(217,184,89,.45)}
+  .headright{margin-left:auto;text-align:right}
+  .headright .k{font-size:11px;color:#69727e;text-transform:uppercase;letter-spacing:.05em}
+  .headright .v{font-size:26px;font-weight:600;line-height:28px}
+  .headright .v small{font-size:12px;color:var(--dim);font-weight:400}
+
+  .dbody{flex:1;overflow:hidden;padding:12px 14px}
+  .sect{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:0 0 6px;padding-bottom:3px;border-bottom:1px solid var(--border)}
+  .cols{display:flex;gap:16px}
+  .col{flex:1;min-width:0}
+
+  .st{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #191d21;font-size:12px}
+  .st .k{color:var(--dim)}
+  .st .v{font-variant-numeric:tabular-nums}
+  .st .v.up{color:var(--good)}
+  .st .v.dn{color:var(--bad)}
+  .st .v small{color:#5f6874;font-size:11px}
+
+  .mstone{background:#171b1f;border:1px solid var(--border);padding:9px 10px;margin-bottom:9px}
+  .mtop{display:flex;justify-content:space-between;align-items:baseline}
+  .mname{font-weight:600}
+  .mval{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .mbar{height:8px;background:var(--track);border:1px solid #000;margin:6px 0 5px}
+  .mbar i{display:block;height:100%}
+  .meta{display:flex;justify-content:space-between;font-size:11px;color:#69727e}
+  .meta b{color:var(--fg);font-weight:600}
+  .eta{color:var(--good)}
+
+  .hint{font-size:11px;color:#5f6874;line-height:1.5;margin-top:8px}
+
+  .dfoot{display:flex;gap:6px;padding:9px 14px;border-top:1px solid var(--border);background:#171b1f}
+  .btn{padding:4px 12px;border:1px solid rgba(115,191,255,.5);background:#2F3337;color:var(--fg)}
+  .btn.ghost{border-color:var(--border);color:var(--dim)}
+  .btn.right{margin-left:auto}
+
+  .note{margin:14px 2px 0;color:#5f6874;font-size:11px;max-width:1180px;line-height:1.5}
+  .note b{color:#8b939e;font-weight:600}
+</style>
+</head>
+<body>
+<p class="caption">Mockup B — Master / detail &nbsp;·&nbsp; list on the left, one pawn in full on the right</p>
+
+<div class="win">
+  <div class="titlebar">
+    <h1>Psycasters</h1>
+    <span class="sub">4 psycasters &nbsp;·&nbsp; 3 on the path &nbsp;·&nbsp; 2 need attention</span>
+    <span class="x">✕</span>
+  </div>
+
+  <div class="body">
+    <!-- ================= LEFT RAIL ================= -->
+    <div class="rail">
+      <div class="railtop">
+        <span class="search">Search…</span>
+        <span class="funnel">Soonest ▾</span>
+      </div>
+
+      <div class="railgroup">Psycasters <span>4</span></div>
+
+      <div class="row sel">
+        <div class="port">MR</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Meridian</span><span class="lv">Illuminated · 22</span></div>
+          <div class="rowsub"><span>Transcendent IV</span><span>~2.4 days</span></div>
+          <div class="bar"><i style="width:65%;background:var(--violet)"></i></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="port">RO</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Rook</span><span class="lv">Enlightened · 14</span></div>
+          <div class="rowsub"><span>Pilgrimage underway</span><span>12 days</span></div>
+          <div class="bar"><i style="width:100%;background:var(--gold);opacity:.55"></i></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="port">VE</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Vess</span><span class="lv">Awakened · 8</span></div>
+          <div class="rowsub"><span>Pilgrimage offer</span><span>~1.6 days</span></div>
+          <div class="bar"><i style="width:85%;background:var(--gold)"></i></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="port">HA</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Halden</span><span class="lv">Awakened · 5</span></div>
+          <div class="rowsub"><span>Not meditating</span><span style="color:#5f6874">storyteller</span></div>
+          <div class="bar"><i style="width:7%;background:#4a4235"></i></div>
+        </div>
+      </div>
+
+      <div class="railgroup">On the path <span>3</span></div>
+
+      <div class="row">
+        <div class="port">CY</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Cyra</span><span class="lv">Dormant</span></div>
+          <div class="rowsub"><span>Awakening</span><span>~1.9 days</span></div>
+          <div class="bar"><i style="width:68%;background:var(--accent)"></i></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="port">TA</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Tam</span><span class="lv">Dormant</span></div>
+          <div class="rowsub"><span style="color:var(--bad)">Psychic coma · 6h</span><span>~9 days</span></div>
+          <div class="bar"><i style="width:15%;background:var(--accent);opacity:.5"></i></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="port">IL</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Ilsa</span><span class="lv">Dormant</span></div>
+          <div class="rowsub"><span>No meditation scheduled</span><span style="color:#5f6874">—</span></div>
+          <div class="bar"><i style="width:0%"></i></div>
+        </div>
+      </div>
+
+      <div class="railgroup">Not psychically capable <span>2</span></div>
+      <div class="row" style="opacity:.5">
+        <div class="port">GR</div>
+        <div class="rowmain">
+          <div class="rowtop"><span class="nm">Grim</span><span class="lv">Age 9</span></div>
+          <div class="rowsub"><span>Too young to awaken</span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= DETAIL ================= -->
+    <div class="detail">
+      <div class="dhead">
+        <div class="bigport">portrait</div>
+        <div>
+          <div class="dh1">Meridian</div>
+          <div class="dh2">Archotechist &nbsp;·&nbsp; meditating at an anima tree (Natural)</div>
+          <div class="chips">
+            <span class="chip tier">Illuminated · Tier III</span>
+            <span class="chip path">Skipmaster</span>
+            <span class="chip path">Archon</span>
+            <span class="chip path">Harmonist</span>
+            <span class="chip warn">1 spec point unspent</span>
+          </div>
+        </div>
+        <div class="headright">
+          <div class="k">Psycaster level</div>
+          <div class="v">22 <small>/ 400</small></div>
+        </div>
+      </div>
+
+      <div class="dbody">
+        <p class="sect">Progression</p>
+
+        <div class="mstone">
+          <div class="mtop">
+            <span class="mname" style="color:var(--violet)">Transcendent IV</span>
+            <span class="mval">31.2 / 48.0 h meditated</span>
+          </div>
+          <div class="mbar"><i style="width:65%;background:var(--violet)"></i></div>
+          <div class="meta">
+            <span>Averaging <b>6.8 h/day</b> over the last 6 days</span>
+            <span class="eta">Expected in <b>~2.4 days</b> &nbsp;·&nbsp; 12th of Jugust</span>
+          </div>
+        </div>
+
+        <div class="cols">
+          <div class="col">
+            <p class="sect">Psycast stats</p>
+            <div class="st"><span class="k">Psyfocus</span><span class="v">84%</span></div>
+            <div class="st"><span class="k">Psyfocus gain</span><span class="v up">+128%</span></div>
+            <div class="st"><span class="k">Neural heat</span><span class="v">12 / 60</span></div>
+            <div class="st"><span class="k">Neural heat recovery</span><span class="v up">+41%</span></div>
+            <div class="st"><span class="k">Psychic sensitivity</span><span class="v up">148%</span></div>
+            <div class="st"><span class="k">Psycast cost</span><span class="v up">-18% <small>specs</small></span></div>
+            <div class="st"><span class="k">Entropy from casting</span><span class="v dn">+6% <small>synergy</small></span></div>
+          </div>
+          <div class="col">
+            <p class="sect">Psycasts²</p>
+            <div class="st"><span class="k">Skill levels invested</span><span class="v">64 <small>across 17 casts</small></span></div>
+            <div class="st"><span class="k">Mastered trees</span><span class="v">1 <small>Skipmaster</small></span></div>
+            <div class="st"><span class="k">Specialization</span><span class="v">Chronarch <small>· 4 nodes</small></span></div>
+            <div class="st"><span class="k">Spec points</span><span class="v up">1 unspent</span></div>
+            <div class="st"><span class="k">Active synergies</span><span class="v">6</span></div>
+            <div class="st"><span class="k">Meditation today</span><span class="v">4.1 h <small>safe to 6 h</small></span></div>
+            <div class="st"><span class="k">Coma risk</span><span class="v">None</span></div>
+          </div>
+        </div>
+
+        <p class="hint">
+          Milestones behind this pawn: Awakened 21 Aprimay · Enlightened 4 Jugust (Trial of the Altar) · Illuminated 39 Jugust (Way of the Anima).
+        </p>
+      </div>
+
+      <div class="dfoot">
+        <span class="btn">Open psycast tab</span>
+        <span class="btn ghost">Constellation</span>
+        <span class="btn ghost">Set default focus ▾</span>
+        <span class="btn ghost right">Jump to pawn</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="note">
+  <b>Read:</b> the rail is the roster (grouped, each row carrying its own milestone bar and ETA), the panel is one pawn in full —
+  every stat that matters plus the single next milestone with its basis (<i>averaging 6.8 h/day over the last 6 days</i>) rather than a bare number.
+  Pawns who cannot awaken at all are listed dimmed at the bottom so "why is nobody progressing" is answerable without leaving the window.
+</p>
+</body>
+</html>

@@ -3,11 +3,12 @@
 
   <!-- Enlightenment tier marker. Severity == tier (1 Awakened, 2 Enlightened, 3 Illuminated, open-ended
        beyond). Granted by the awakening/pilgrimage progression (and injected onto enemy psycasters). The
-       per-tier psychic-sensitivity bonus lives on the stages; the custom class labels it by tier name. -->
+       per-tier psychic-sensitivity bonus lives on the stages; the custom class brackets the tier numeral,
+       so the health tab reads "Enlightened (Tier II)". A TieringOverrideDef reskin replaces this label. -->
   <HediffDef>
     <defName>PS_Enlightenment</defName>
     <hediffClass>PsycastSynergies.Hediff_Enlightenment</hediffClass>
-    <label>enlightenment</label>
+    <label>enlightened</label>
     <description>A measure of how deeply this mind has awakened to psychic enlightenment. Each tier perceives the lattice of mind ever more clearly.</description>
     <isBad>false</isBad>
     <maxSeverity>99</maxSeverity>

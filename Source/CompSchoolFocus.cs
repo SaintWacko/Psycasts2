@@ -19,6 +19,9 @@ namespace PsycastSynergies
     // Wealth, Group, Archotech, ...). A non-psycaster who meditates FACING it is then steered toward
     // that type's psycast schools among the Enlightenment awakening cards (MeditationSystem.FocusKeywords).
     // Storing the VPE MeditationFocusDef keeps the naming interoperable as VPE/addons add focus types.
+    // Holds static Texture2D fields, so Verse requires the attribute or it warns that assets must be
+    // loaded on the main thread. Same rule as SkillFx and Patch_AuraToggleGizmo.
+    [StaticConstructorOnStartup]
     public class CompSchoolFocus : ThingComp
     {
         public MeditationFocusDef selectedFocus;
@@ -59,7 +62,11 @@ namespace PsycastSynergies
         public override string CompInspectStringExtra()
         {
             if (ParentIsWall) return null;
-            string typeLine = "PS_FocusTypeLabel".Translate(selectedFocus != null ? selectedFocus.LabelCap.ToString() : "PS_FocusAny".Translate().ToString());
+            // The per-thing attunement is no longer settable (the gizmo was removed in favour of the
+            // pawn's own default focus), so only saves that already attuned something show the line.
+            string typeLine = selectedFocus != null
+                ? "PS_FocusTypeLabel".Translate(selectedFocus.LabelCap.ToString()).ToString()
+                : null;
             var med = parent.TryGetComp<CompMeditationFocus>();
             if (med == null) return typeLine;
             var user = med.LastUser;
@@ -72,32 +79,22 @@ namespace PsycastSynergies
                 if (v > 0f) cachedFocusStr = "PS_FocusStrength".Translate(v.ToStringPercent());
             }
             // While vanilla is showing its live line (user != null) don't duplicate the strength.
-            return user == null && !cachedFocusStr.NullOrEmpty() ? typeLine + "\n" + cachedFocusStr : typeLine;
+            if (user != null || cachedFocusStr.NullOrEmpty()) return typeLine;
+            return typeLine == null ? cachedFocusStr : typeLine + "\n" + cachedFocusStr;
         }
 
-        public override IEnumerable<Gizmo> CompGetGizmosExtra()
-        {
-            foreach (var g in base.CompGetGizmosExtra()) yield return g;
-            if (parent.Faction != null && parent.Faction != Faction.OfPlayer) yield break;
-            // Don't offer the focus-type selector on walls (they carry a vanilla Minimal focus comp).
-            if (ParentIsWall) yield break;
-
-            yield return new Command_Action
-            {
-                defaultLabel = "PS_FocusTypeLabel".Translate(selectedFocus != null ? selectedFocus.LabelCap.ToString() : "PS_FocusAny".Translate().ToString()),
-                defaultDesc = "PS_FocusTypeDesc".Translate(),
-                icon = FocusIcon(selectedFocus) ?? GizmoIcon,
-                action = OpenMenu
-            };
-        }
+        // NO GIZMO. Every meditation focus in the colony used to carry a "Focus type: ..." button,
+        // which meant one on every sculpture, brazier, throne and meditation spot. The same choice
+        // now lives on the PAWN (Psycasters main tab, the psycast tab's focus row, and Modern
+        // Psycasts UI's focus tiles), so a colonist carries their preference to whatever they sit
+        // at. selectedFocus is kept and still scribed so saves that attuned a building keep working -
+        // MeditationSystem still reads it first in the focus priority chain.
 
         internal static Texture2D FocusIcon(MeditationFocusDef def)
         {
             string p = def?.GetModExtension<MeditationFocusExtension>()?.icon;
             return string.IsNullOrEmpty(p) ? null : ContentFinder<Texture2D>.Get(p, false);
         }
-
-        private void OpenMenu() => OpenMenuFor(f => selectedFocus = f, "PS_FocusAnyTrait".Translate());
 
         internal static void OpenMenuFor(System.Action<MeditationFocusDef> setter, string nullLabel)
         {

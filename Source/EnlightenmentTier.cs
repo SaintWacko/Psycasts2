@@ -98,10 +98,23 @@ namespace PsycastSynergies
         }
     }
 
-    // Enlightenment tier hediff. Severity == tier. Custom so the bracket label reflects the tier name
-    // (including future procedural tier-4+ names) regardless of which stage is active.
+    // Enlightenment tier hediff. Severity == tier. Reads "Enlightened (Tier II)" on the health tab: the
+    // base label is the def's ("enlightened"), the brackets carry the tier as a Roman numeral.
+    // LabelBase is overridden ONLY so a TieringOverrideDef reskin still names the ladder its own way -
+    // without it, a modpack that renames the tiers would still read "Enlightened" here and contradict
+    // itself. With no reskin loaded TierName returns null and def.label wins, exactly as vanilla does it.
     public class Hediff_Enlightenment : HediffWithComps
     {
-        public override string LabelInBrackets => EnlightenmentTier.Name(Mathf.RoundToInt(Severity));
+        public override string LabelBase
+        {
+            get
+            {
+                var custom = TieringControl.TierName(Mathf.RoundToInt(Severity));
+                return custom.NullOrEmpty() ? base.LabelBase : custom;
+            }
+        }
+
+        public override string LabelInBrackets
+            => "PS_TierBracket".Translate(RomanNumerals.ToRoman(Mathf.RoundToInt(Severity)));
     }
 }

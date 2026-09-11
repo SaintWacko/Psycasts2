@@ -1,0 +1,141 @@
+<div class="rw-vanilla ps-root">
+<style>
+.ps-win{display:flex;gap:0;height:600px;padding:0;}
+.ps-rail{width:176px;flex:0 0 176px;padding:0;}
+.ps-nav{height:32px;line-height:32px;padding:0 8px;font-size:15px;color:var(--rw-ink);}
+.ps-nav:hover{background:rgba(255,255,255,.09);}
+.ps-nav.is-on{background:rgba(190,215,255,.16);}
+.ps-sep{width:1px;background:rgba(255,255,255,.22);margin:0 10px 0 8px;}
+.ps-body{flex:1;overflow:hidden;position:relative;padding-right:14px;}
+.ps-head{font-size:21px;color:var(--rw-ink);margin:12px 0 2px;}
+.ps-head:first-child{margin-top:0;}
+.ps-line{height:1px;background:rgba(255,255,255,.22);margin:4px 0 6px;}
+.ps-row{padding:1px 0;}
+.ps-lab{display:flex;align-items:center;justify-content:space-between;font-size:15px;color:var(--rw-ink);}
+.ps-box{width:15px;height:15px;border:1px solid rgba(255,255,255,.55);display:inline-block;text-align:center;line-height:14px;font-size:12px;}
+.ps-hint{font-size:12px;color:#b8b8b8;margin:0 0 6px 24px;line-height:1.35;}
+.ps-hint.nb{margin-left:0;}
+.ps-sub{margin-left:24px;}
+.ps-slider{height:10px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.28);position:relative;margin:2px 0 2px;}
+.ps-knob{position:absolute;top:-2px;width:9px;height:14px;background:#cfcfcf;}
+.ps-note{font-size:12px;color:#ffb85c;margin:0 0 6px 24px;}
+.ps-fade{position:absolute;left:0;right:0;bottom:0;height:34px;background:linear-gradient(to top,var(--rw-panel),transparent);}
+.ps-btn{display:inline-block;border:1px solid rgba(255,255,255,.4);padding:5px 14px;font-size:14px;margin:4px 0;}
+</style>
+
+<div class="rw-window ps-win">
+  <div class="ps-rail">
+    <div class="ps-nav is-on">Psycast levels</div>
+    <div class="ps-nav">Paths and points</div>
+    <div class="ps-nav">Meditation</div>
+    <div class="ps-nav">Pilgrimages</div>
+    <div class="ps-nav">Enemy psycasters</div>
+    <div class="ps-nav">Display</div>
+    <div class="ps-nav">Advanced</div>
+  </div>
+  <div class="ps-sep"></div>
+  <div class="ps-body">
+    <div class="ps-head">Spending points</div><div class="ps-line"></div>
+
+    <div class="ps-row">
+      <div class="ps-lab">Each level makes a psycast 5% stronger</div>
+      <div class="ps-slider"><div class="ps-knob" style="left:20%"></div></div>
+      <div class="ps-hint nb">Raises its damage, the size of its area and how long its effect lasts.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab">Highest level one psycast can reach: 10</div>
+      <div class="ps-slider"><div class="ps-knob" style="left:33%"></div></div>
+      <div class="ps-hint nb">The Convergence specialization adds five more on top of this.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab">Psycaster levels needed for each psycast level: 3</div>
+      <div class="ps-slider"><div class="ps-knob" style="left:22%"></div></div>
+      <div class="ps-hint nb">Stops you pouring every point into one psycast early on. At 3, a level 30 psycaster can take a single psycast to level 10.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Psycaster stats go up on their own</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Neural heat, heat recovery and psychic sensitivity rise with every psycaster level, so your points stay free for psycasts. Turn this off to get the "Upgrade Psycaster Stats" button back.</div>
+    </div>
+
+    <div class="ps-head">Links between psycasts</div><div class="ps-line"></div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Psycasts feed each other</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Psycasts in the same tree are linked. Levelling one adds a little to the ones it feeds, and the skill card shows you which.</div>
+    </div>
+    <div class="ps-row ps-sub">
+      <div class="ps-lab">Each linked level adds 2%</div>
+      <div class="ps-slider"><div class="ps-knob" style="left:20%"></div></div>
+      <div class="ps-hint nb">How much one level of a linked psycast gives to the psycast it feeds.</div>
+    </div>
+
+    <div class="ps-head">What levels change</div><div class="ps-line"></div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Damage and power</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Melee hits, explosions and anything else measured as raw power.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Size of the area</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">How far an area effect reaches.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>How long effects last</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Buffs, debuffs and anything else with a timer on it.</div>
+    </div>
+    <div class="ps-fade"></div>
+  </div>
+</div>
+
+<div style="height:16px"></div>
+
+<div class="rw-window ps-win">
+  <div class="ps-rail">
+    <div class="ps-nav">Psycast levels</div>
+    <div class="ps-nav">Paths and points</div>
+    <div class="ps-nav">Meditation</div>
+    <div class="ps-nav">Pilgrimages</div>
+    <div class="ps-nav">Enemy psycasters</div>
+    <div class="ps-nav is-on">Display</div>
+    <div class="ps-nav">Advanced</div>
+  </div>
+  <div class="ps-sep"></div>
+  <div class="ps-body">
+    <div class="ps-head">The psycast tree</div><div class="ps-line"></div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Hide psycasts you have not learned</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">An unlearned psycast shows a question mark instead of its icon, so you find out what each one is when you take it. The shape of the tree still shows.</div>
+    </div>
+    <div class="ps-row ps-sub">
+      <div class="ps-lab"><span>Still show the ones you can pick next</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Psycasts you already meet the requirements for stay visible, so your next choice is always in front of you. Only what sits deeper up the tree is hidden.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Hide trees this pawn has not unlocked</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">The tree list shows only what the pawn owns instead of a wall of dark tiles. Works while new trees come from awakening cards, and dev mode still shows everything.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Level up effects</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Sparks and a soft sound when you spend a point, and a gold flare when a psycast reaches its top level.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Meditation bars in the psycast tab</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Small bars for coma risk, progress to the next psycaster level, and the climb to the next tier.</div>
+    </div>
+
+    <div class="ps-head">No taking it back</div><div class="ps-line"></div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>No refunding psycast levels</span><span class="ps-box">&nbsp;</span></div>
+      <div class="ps-hint">Removes the "Reset skills" button from the psycast tab. Points you spend are spent for good.</div>
+    </div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>No refunding specializations</span><span class="ps-box">&nbsp;</span></div>
+      <div class="ps-hint">Removes the refund button from the constellation window.</div>
+    </div>
+
+    <div class="ps-head">Speed</div><div class="ps-line"></div>
+    <div class="ps-row">
+      <div class="ps-lab"><span>Remember recent calculations</span><span class="ps-box">✓</span></div>
+      <div class="ps-hint">Keeps the mod cheap to run, and numbers still update the instant anything changes. Leave this on. Turn it off only if a number on screen looks wrong and you want to rule this out.</div>
+    </div>
+    <div class="ps-fade"></div>
+  </div>
+</div>

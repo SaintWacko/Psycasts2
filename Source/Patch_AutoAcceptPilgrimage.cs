@@ -25,6 +25,11 @@ namespace PsycastSynergies
 
             if (quest.State == QuestState.NotYetAccepted) quest.Accept(null);
 
+            // The root node bailed out and attached an end part instead of a pilgrimage (see
+            // PilgrimQuestGen) - the Accept above has already fired it, so the quest is over. Suppress
+            // both letters rather than announcing a pilgrimage that never started.
+            if (!HasPilgrimPart(quest)) return false;
+
             Pawn pilgrim = FindPilgrim(quest);
             string label = quest.name.NullOrEmpty() ? "Pilgrimage begins" : "Pilgrimage begins: " + quest.name;
             string text = (pilgrim != null ? pilgrim.LabelShortCap + " has been called to a pilgrimage" : "A pilgrimage has been set in motion")
@@ -32,6 +37,14 @@ namespace PsycastSynergies
             Find.LetterStack.ReceiveLetter(label, text, LetterDefOf.PositiveEvent,
                 pilgrim != null ? new LookTargets(pilgrim) : LookTargets.Invalid, null, quest);
             return false;   // do not also send the normal offer/choice letter
+        }
+
+        private static bool HasPilgrimPart(Quest quest)
+        {
+            var parts = quest.PartsListForReading;
+            for (int i = 0; i < parts.Count; i++)
+                if (parts[i] is QuestPart_PilgrimMeditation || parts[i] is QuestPart_PilgrimJourney) return true;
+            return false;
         }
 
         private static Pawn FindPilgrim(Quest quest)

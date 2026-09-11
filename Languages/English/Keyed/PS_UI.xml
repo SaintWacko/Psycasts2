@@ -21,7 +21,6 @@
   <PS_DefaultFocusTip>Personal meditation focus preference. Used when this colonist meditates at a focus building that doesn't have its own attunement set.\n\nPriority: building's attunement &#8594; pawn's default &#8594; building's native focus &#8594; unfocused.</PS_DefaultFocusTip>
   <PS_FocusAny>any</PS_FocusAny>
   <PS_FocusAnyDefer>Any (defer to building / traits)</PS_FocusAnyDefer>
-  <PS_FocusAnyTrait>Any (trait-weighted)</PS_FocusAnyTrait>
   <PS_ResetSkills>Reset skills</PS_ResetSkills>
   <PS_ResetSkillsN>Reset skills ({0})</PS_ResetSkillsN>
   <PS_ResetSkillsBody>Unlearn every psycast and refund all points spent learning and leveling them? Unlocked paths are kept. (Free.)</PS_ResetSkillsBody>
@@ -38,7 +37,6 @@
 
   <!-- Meditation focus attunement (building comp) and pawn gizmos -->
   <PS_FocusTypeLabel>Focus type: {0}</PS_FocusTypeLabel>
-  <PS_FocusTypeDesc>Attune this meditation focus to a psychic focus type.\n\nA non-psycaster who meditates facing this focus is steered toward that type's psycast schools among their awakening cards when Enlightenment strikes. Leave it on &#8220;any&#8221; to weight by the meditator's traits instead.</PS_FocusTypeDesc>
   <PS_FocusStrengthFor>Meditation focus strength for {0}: {1} / day</PS_FocusStrengthFor>
   <PS_FocusStrength>Meditation focus strength: {0} / day</PS_FocusStrength>
   <PS_StopMeditating>Stop meditating</PS_StopMeditating>
@@ -76,14 +74,80 @@
   <!-- Replaces VPE's "Locked" on trees this pawn has not been offered yet (both UIs) -->
   <PS_Undiscovered>Undiscovered</PS_Undiscovered>
 
-  <!-- Dormant psycast tab (non-psycasters, when the tab is shown on every colonist) -->
-  <PS_DormantTitle>Psychically dormant</PS_DormantTitle>
-  <PS_DormantDesc>No psychic link has formed yet. Give this colonist meditation time and a focus to sit at, and a latent path may surface on its own.</PS_DormantDesc>
-  <PS_DormantNoMeditation>No psychic link has formed yet, and meditation does not lead to Awakening in this game. Another route (an incident, an artifact, a quest or a ritual) has to open the way.</PS_DormantNoMeditation>
-  <PS_DormantAwakening>Awakening</PS_DormantAwakening>
-  <PS_DormantAwakeningTip>Cumulative hours this colonist has spent meditating, out of the total that GUARANTEES an Awakening. Every hour before that also carries its own rising chance, so most seekers awaken well short of the full count.</PS_DormantAwakeningTip>
-  <PS_DormantChanceOnly>Chance only</PS_DormantChanceOnly>
+  <!-- ================= Psycaster roster (main tab) ================= -->
+  <PS_RosterTitle>Psycasters</PS_RosterTitle>
+  <PS_RosterBlurb>{0} psycasters, {1} on the path to awakening, {2} not progressing</PS_RosterBlurb>
+  <PS_RosterOptCaptives>Include prisoners and slaves</PS_RosterOptCaptives>
+  <PS_RosterOptHide>Hide pawns who cannot awaken</PS_RosterOptHide>
+  <PS_RosterSelected>Selected: {0}</PS_RosterSelected>
+  <PS_RosterSelectPrompt>Select a psycaster</PS_RosterSelectPrompt>
+  <PS_RosterFooter>Colony meditation today {0} h, awakening window {1} h, pilgrimage guarantee {2} h, transcendence base {3} h</PS_RosterFooter>
+
+  <PS_ColPawn>Pawn</PS_ColPawn>
+  <PS_ColTier>Tier</PS_ColTier>
+  <PS_ColLevel>Level</PS_ColLevel>
+  <PS_ColPaths>Paths</PS_ColPaths>
+  <PS_ColMeditation>Meditation</PS_ColMeditation>
+  <PS_ColMilestone>Next milestone</PS_ColMilestone>
+  <PS_ColExpected>Expected</PS_ColExpected>
+
+  <PS_GrpPsycasters>Psycasters</PS_GrpPsycasters>
+  <PS_GrpOnThePath>On the path to awakening</PS_GrpOnThePath>
+  <PS_GrpNotProgressing>Not progressing</PS_GrpNotProgressing>
+  <PS_GrpNotProgressingWhy>no meditation scheduled, or the route is switched off</PS_GrpNotProgressingWhy>
+
+  <PS_RosterDormant>Dormant</PS_RosterDormant>
+  <PS_RosterTierRoman>Tier {0}</PS_RosterTierRoman>
+  <PS_RosterPrisoner>Prisoner</PS_RosterPrisoner>
+  <PS_RosterSlave>Slave</PS_RosterSlave>
+  <PS_RosterNoPath>No path yet</PS_RosterNoPath>
+  <PS_RosterNoFocus>No focus set</PS_RosterNoFocus>
+  <PS_RosterFocus>Focus: {0}</PS_RosterFocus>
+  <PS_RosterFlagPick>Path pick waiting</PS_RosterFlagPick>
+  <PS_RosterFlagPoints>{0} specialization points unspent</PS_RosterFlagPoints>
+  <PS_RosterFlagComa>Psychic coma, {0} left</PS_RosterFlagComa>
+  <PS_RosterCaptiveTip>Prisoners and slaves do not accumulate meditation progress. Whatever this pawn has already earned is kept, and the climb resumes if they join the colony.</PS_RosterCaptiveTip>
+
+  <PS_MedNow>Meditating</PS_MedNow>
+  <PS_MedIdle>Scheduled</PS_MedIdle>
+  <PS_MedNotScheduled>Not scheduled</PS_MedNotScheduled>
+  <PS_MedComa>In a coma</PS_MedComa>
+  <PS_MedPilgrimage>On pilgrimage</PS_MedPilgrimage>
+  <PS_MedCannot>Cannot meditate</PS_MedCannot>
+  <PS_MedPerDay>{0} h/day</PS_MedPerDay>
+  <PS_MedToday>{0} h today</PS_MedToday>
+
+  <PS_MsAwakening>Awakening</PS_MsAwakening>
+  <PS_MsPilgrimage>Pilgrimage, {0}</PS_MsPilgrimage>
+  <PS_MsUnderway>Pilgrimage underway</PS_MsUnderway>
+  <PS_MsTranscendence>Transcendence</PS_MsTranscendence>
+  <PS_MsChanceOnly>Chance only</PS_MsChanceOnly>
+  <PS_MsOtherRoute>Another route</PS_MsOtherRoute>
+  <PS_MsDisabled>Switched off</PS_MsDisabled>
+  <PS_MsNone>No milestone</PS_MsNone>
+
+  <PS_EtaDays>{0} days</PS_EtaDays>
+  <PS_EtaHours>{0} h</PS_EtaHours>
+  <PS_EtaImminent>Any hour now</PS_EtaImminent>
+  <PS_EtaNone>No estimate</PS_EtaNone>
+  <PS_EtaChanceOnly>Chance only</PS_EtaChanceOnly>
+  <PS_EtaStoryteller>Storyteller only</PS_EtaStoryteller>
+  <PS_EtaOtherRoute>Another route</PS_EtaOtherRoute>
+  <PS_EtaNotAccruing>Not accruing</PS_EtaNotAccruing>
+  <PS_EtaUnderway>Underway</PS_EtaUnderway>
+  <PS_EtaSiteFades>until the site fades</PS_EtaSiteFades>
+  <PS_EtaBasisRate>at {0} h/day</PS_EtaBasisRate>
+  <PS_EtaBasisToday>today so far</PS_EtaBasisToday>
+  <PS_EtaTip>At this pawn's recent meditation pace they arrive around {0}. The estimate follows a rolling average of their meditation hours per day, so it moves as their schedule does.</PS_EtaTip>
+
+  <PS_BtnPick>Open path cards</PS_BtnPick>
+  <PS_BtnOpenTab>Open psycast tab</PS_BtnOpenTab>
+  <PS_BtnConstellation>Constellation</PS_BtnConstellation>
+  <PS_BtnFocus>Set default focus</PS_BtnFocus>
+  <PS_BtnJump>Jump to pawn</PS_BtnJump>
   <PS_BarComa>Coma risk</PS_BarComa>
+  <PS_BarComaOff>None</PS_BarComaOff>
+  <PS_BarComaTipOff>Comas are switched off. The safe meditation window is set to a full day in the mod settings, so this pawn can meditate as long as you like without any risk.</PS_BarComaTipOff>
   <PS_BarComaTip>Meditation today: {0}h of a {1}h safe window. Past the window, every further hour of meditation risks a psychic coma (current risk: {2} per hour, streak {3}h). Long unbroken streaks and deferred card rerolls raise the risk. Meditation at a pilgrimage site is always safe.</PS_BarComaTip>
   <PS_BarLevel>Next level</PS_BarLevel>
   <PS_BarLevelTip>Psycaster experience toward the next level. Meditation trickles experience, casting earns more, and a flow of ancient knowledge grants a large burst.</PS_BarLevelTip>

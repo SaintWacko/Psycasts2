@@ -21,6 +21,50 @@ namespace PsycastSynergies
         static PSPilgrimDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(PSPilgrimDefOf)); }
     }
 
+    // Ending a LIVE quest must go through the Quest.End INSTANCE method, whose letter parameter is
+    // named `sendLetter`. Writing `sendStandardLetter:` looks equivalent but names a parameter that
+    // exists only on the QuestGen_End.End EXTENSION method - a quest-GENERATION helper - so overload
+    // resolution silently binds there instead (no instance overload has that parameter name, so the
+    // instance method is not even a candidate). That helper calls QuestGen.quest.AddPart(...), and
+    // QuestGen.quest is null outside generation, so it threw NullReferenceException BEFORE the quest
+    // ever ended: the site had already been destroyed, firedEnd had already latched, the part went
+    // inert, and the quest stayed Ongoing forever - which made PilgrimQuestOngoing() report a
+    // pilgrimage in flight for the rest of the save and block every future one at that tier.
+    // Do NOT reintroduce the named argument.
+    internal static class PilgrimQuestEnd
+    {
+        public static void End(Quest quest, QuestEndOutcome outcome)
+        {
+            if (quest == null || quest.State != QuestState.Ongoing) return;
+            try { quest.End(outcome, sendLetter: true); }
+            catch (System.Exception e)
+            { Log.WarningOnce("[Psycasts²] failed to end pilgrimage quest: " + e, 0x7C1A9E3); }
+        }
+    }
+
+    // GENERATION-time counterpart to PilgrimQuestEnd. QuestGen has ALREADY created the quest by the time
+    // a root node's RunInt runs, so a bare `return` on a bail-out path leaves a PART-LESS quest behind:
+    // Patch_AutoAcceptPilgrimage accepts it, nothing ever ticks it, and nothing in vanilla ends a quest
+    // with no parts - so it sits Ongoing forever and PilgrimQuestOngoing() locks that tier out for the
+    // rest of the save. That is the card #155 failure mode reached from generation instead of ticking.
+    // Attaching an end part makes the quest resolve the instant it initiates.
+    // NOTE: QuestPart_QuestEnd here is quest-GENERATION machinery. It is NOT the runtime
+    // Quest.End(outcome, sendLetter:) call in PilgrimQuestEnd above - do not conflate the two.
+    internal static class PilgrimQuestGen
+    {
+        public static void BailOut(Quest quest, Slate slate)
+        {
+            if (quest == null) return;
+            quest.AddPart(new QuestPart_QuestEnd
+            {
+                inSignal = slate?.Get<string>("inSignal"),
+                outcome = QuestEndOutcome.InvalidPreAcceptance,
+                sendLetter = false,
+                playSound = false,
+            });
+        }
+    }
+
     // The single QuestPart that drives the whole pilgrimage:
     //  - lazy-spawns the altar the first frame the site's map exists (after the caravan arrives),
     //  - ticks while the pilgrim is meditating AT that altar to accumulate progress,
@@ -42,6 +86,7 @@ namespace PsycastSynergies
         public int wavesFired;
         public bool altarSpawned;
         public bool firedEnd;
+        public QuestEndOutcome endedWith = QuestEndOutcome.Unknown;   // what Fire* asked for, so a stuck save can retry it
 
         public override IEnumerable<GlobalTargetInfo> QuestLookTargets
         {
@@ -67,7 +112,7 @@ namespace PsycastSynergies
         public override void QuestPartTick()
         {
             base.QuestPartTick();
-            if (firedEnd) return;
+            if (firedEnd) { RetryStuckEnd(); return; }
             if (pilgrim == null || pilgrim.Dead || EnlightenmentTier.TierOf(pilgrim) != targetTier - 1)
             { FireFail(); return; }
             if (site == null || site.Destroyed)
@@ -394,7 +439,7 @@ namespace PsycastSynergies
                     pilgrim, MessageTypeDefOf.PositiveEvent, false);
             }
             else if (site != null && !site.Destroyed) site.Destroy();   // no map loaded -> safe to clean up now
-            quest.End(QuestEndOutcome.Success, sendStandardLetter: true);
+            EndQuest(QuestEndOutcome.Success);
         }
 
         private void FireFail()
@@ -404,8 +449,21 @@ namespace PsycastSynergies
             // fail can't strand them either - let them reform a caravan out.
             bool pilgrimOnSite = site != null && site.HasMap && pilgrim != null && !pilgrim.Dead && pilgrim.MapHeld == site.Map;
             if (site != null && !site.Destroyed && !pilgrimOnSite) site.Destroy();
-            quest.End(QuestEndOutcome.Fail, sendStandardLetter: true);
+            EndQuest(QuestEndOutcome.Fail);
         }
+
+        private void EndQuest(QuestEndOutcome outcome)
+        {
+            endedWith = outcome;
+            PilgrimQuestEnd.End(quest, outcome);
+        }
+
+        // Saves written before the End() overload fix hold firedEnd = true on a quest that is still
+        // Ongoing: the end threw before it took, so the part went inert and the quest could never
+        // resolve - permanently blocking new pilgrimages at that tier. Finish the job instead.
+        // Old saves have no scribed outcome, so they conclude as Unknown (a neutral "concluded"
+        // letter), which is honest: by then we cannot know whether it was won or lost.
+        private void RetryStuckEnd() => PilgrimQuestEnd.End(quest, endedWith);
 
 
         public override void ExposeData()
@@ -425,6 +483,7 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref wavesFired, "wavesFired");
             Scribe_Values.Look(ref altarSpawned, "altarSpawned");
             Scribe_Values.Look(ref firedEnd, "firedEnd");
+            Scribe_Values.Look(ref endedWith, "endedWith", QuestEndOutcome.Unknown);
         }
     }
 
@@ -485,9 +544,11 @@ namespace PsycastSynergies
             var slate = QuestGen.slate;
             int neededTier = targetTier - 1;
 
+            // Both bail-outs must attach an end part: TestRunInt already passed, but it re-rolls the same
+            // randomized TileFinder search, so it can succeed there and fail here. See PilgrimQuestGen.
             var pilgrim = PilgrimRouting.FindPilgrim(neededTier, true);
-            if (pilgrim == null) return;
-            if (!TileFinder.TryFindNewSiteTile(out PlanetTile tile)) return;
+            if (pilgrim == null) { PilgrimQuestGen.BailOut(quest, slate); return; }
+            if (!TileFinder.TryFindNewSiteTile(out PlanetTile tile)) { PilgrimQuestGen.BailOut(quest, slate); return; }
 
             Site site = SiteMaker.MakeSite(PSPilgrimDefOf.PS_PilgrimSite, tile, null);
             site.GetComponent<TimeoutComp>()?.StartTimeout(30 * 60000);   // 30 days to complete
@@ -541,6 +602,7 @@ namespace PsycastSynergies
         public int dailyProgress;
         public int dailyProgressDay = -1;
         public bool firedEnd;
+        public QuestEndOutcome endedWith = QuestEndOutcome.Unknown;   // what Fire* asked for, so a stuck save can retry it
 
         public override IEnumerable<GlobalTargetInfo> QuestLookTargets
         {
@@ -577,7 +639,7 @@ namespace PsycastSynergies
         public override void QuestPartTick()
         {
             base.QuestPartTick();
-            if (firedEnd) return;
+            if (firedEnd) { RetryStuckEnd(); return; }
             if (pilgrim == null || pilgrim.Dead || EnlightenmentTier.TierOf(pilgrim) != targetTier - 1)
             { FireFail(); return; }
             if (sites == null || sites.Count == 0)
@@ -585,6 +647,22 @@ namespace PsycastSynergies
 
             while (siteProgress.Count < sites.Count) siteProgress.Add(0);
             while (siteFocusSpawned.Count < sites.Count) siteFocusSpawned.Add(false);
+
+            // A site that is GONE can never be completed, and completion below requires progress at
+            // EVERY site - so without this the part ticks forever on an unwinnable journey and the quest
+            // stays Ongoing for good: the same permanent lockout as card #155, reached another way.
+            // Sites are destroyed in place and never removed from the list, so `sites.Count` stays put
+            // and the Count == 0 guard above never catches this. Note the timers keep running on the
+            // sites the pilgrim is NOT at (TimeoutComp only spares a site that currently has a map), so
+            // a slow journey loses its later sites while the pilgrim is still at the first one.
+            // A COMPLETED site disappearing is expected and harmless (the map is released when the
+            // pilgrim leaves, and TimeoutComp then destroys it), so only an INCOMPLETE one is fatal.
+            for (int i = 0; i < sites.Count; i++)
+            {
+                var gone = sites[i];
+                if ((gone == null || gone.Destroyed) && siteProgress[i] < requiredTicksPerSite)
+                { FireFail(); return; }
+            }
 
             for (int i = 0; i < sites.Count; i++)
             {
@@ -670,7 +748,7 @@ namespace PsycastSynergies
                 Messages.Message("PS_MsgPilgrimReform".Translate(pilgrim?.LabelShortCap ?? "PS_ThePilgrim".Translate()),
                     pilgrim, MessageTypeDefOf.PositiveEvent, false);
             }
-            quest.End(QuestEndOutcome.Success, sendStandardLetter: true);
+            EndQuest(QuestEndOutcome.Success);
         }
 
         private void FireFail()
@@ -679,8 +757,17 @@ namespace PsycastSynergies
             // Spare the site the pilgrim is standing on (if alive) so a fail can't strand them.
             Site keep = (pilgrim != null && !pilgrim.Dead) ? pilgrim.MapHeld?.Parent as Site : null;
             DestroyAllSitesExcept(keep);
-            quest.End(QuestEndOutcome.Fail, sendStandardLetter: true);
+            EndQuest(QuestEndOutcome.Fail);
         }
+
+        private void EndQuest(QuestEndOutcome outcome)
+        {
+            endedWith = outcome;
+            PilgrimQuestEnd.End(quest, outcome);
+        }
+
+        // See QuestPart_PilgrimMeditation.RetryStuckEnd - same pre-fix stuck-save recovery.
+        private void RetryStuckEnd() => PilgrimQuestEnd.End(quest, endedWith);
 
         private void DestroyAllSitesExcept(Site keep)
         {
@@ -702,6 +789,7 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref dailyProgress, "dailyProgress");
             Scribe_Values.Look(ref dailyProgressDay, "dailyProgressDay", -1);
             Scribe_Values.Look(ref firedEnd, "firedEnd");
+            Scribe_Values.Look(ref endedWith, "endedWith", QuestEndOutcome.Unknown);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 if (sites == null) sites = new List<Site>();
@@ -730,7 +818,7 @@ namespace PsycastSynergies
             var quest = QuestGen.quest;
             var slate = QuestGen.slate;
             var pilgrim = PilgrimRouting.FindPilgrim(targetTier - 1, false);
-            if (pilgrim == null) return;
+            if (pilgrim == null) { PilgrimQuestGen.BailOut(quest, slate); return; }
 
             int count = Mathf.Max(1, siteCount);
             var sites = new List<Site>();
@@ -742,7 +830,7 @@ namespace PsycastSynergies
                 Find.WorldObjects.Add(s);
                 sites.Add(s);
             }
-            if (sites.Count == 0) return;
+            if (sites.Count == 0) { PilgrimQuestGen.BailOut(quest, slate); return; }
 
             int reqTicks = PsycastSynergiesMod.Settings?.animaPilgrimTicksPerSite ?? 50000;
             if (reqTicks < 2500) reqTicks = 2500;

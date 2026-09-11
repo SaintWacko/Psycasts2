@@ -31,6 +31,12 @@ namespace PsycastSynergies
 
         private int chosen = -1;
         private bool resolved;   // a real decision was made (embrace / forgo / defer); Esc-closes requeue the pick
+        private bool redealt;    // the one free re-deal on a first awakening has been used
+        // Which pawn has already spent their re-deal, by thingIDNumber. Static because the re-deal works
+        // by closing this window and letting ShowNextPick build the next one, so the replacement does not
+        // exist yet when Redeal runs and the flag cannot be handed over directly. An ID rather than a Pawn
+        // reference on purpose: a static holding a Pawn would root a dead Game graph after the run ends.
+        private static int redealUsedForPawnId = -1;
         private readonly float[] flipT;
         private readonly bool[] flipping;
         private readonly float[] burstStart;
@@ -50,6 +56,7 @@ namespace PsycastSynergies
         private static bool sndInit;
         // When on, flipping one card reveals all of them and lets the player re-pick any; default commits the pick.
         private static bool RevealAll => PsycastSynergiesMod.Settings != null && PsycastSynergiesMod.Settings.cardRevealAll;
+        private static bool RedealAllowed => PsycastSynergiesMod.Settings == null || PsycastSynergiesMod.Settings.cardRedeal;
         private static void EnsureSounds()
         {
             if (sndInit) return;
@@ -71,6 +78,7 @@ namespace PsycastSynergies
             flipping = new bool[n];
             burstStart = new float[n];
             carTarget = n / 2;
+            redealt = pawn != null && redealUsedForPawnId == pawn.thingIDNumber;
             forcePause = true;
             closeOnClickedOutside = false;
             closeOnCancel = false;   // Esc must not dismiss the pick - the "Choose later" button is the only way to set it aside
@@ -101,6 +109,10 @@ namespace PsycastSynergies
                     Messages.Message("PS_MsgCardsAside".Translate(pawn.LabelShortCap),
                         pawn, MessageTypeDefOf.CautionInput, false);
             }
+            // Mark the pick answered BEFORE chaining. Any request queued while this window was up is a
+            // duplicate of the hand just resolved, and NotePickClosed is what lets ShowNextPick tell the
+            // difference between that and a genuine second pawn waiting their turn.
+            MeditationSystem.NotePickClosed(pawn);
             MeditationSystem.ShowNextPick();   // chain to the next queued awakening, if another pawn awoke at the same time
         }
 
@@ -148,6 +160,29 @@ namespace PsycastSynergies
                                  : "PS_CardSubCommitted".Translate().ToString()));
             GUI.color = Color.white;
             Text.Anchor = prevAnchor;
+
+            // Reroll, top right. Offered ONLY once a card is face up: rerolling a hand you have not seen
+            // tells you nothing, so gating it on "still face down" made the button useless exactly when it
+            // was visible. One per awakening, first awakening only (tier II/III already have their own
+            // meditate-again reroll in the footer, which costs a meditation cycle).
+            //
+            // With reveal-all on, wait for the WHOLE hand. The player turns those cards by hand, so a
+            // Reroll appearing beside one face-up card and two face-down ones reads as "reroll this card" -
+            // and there is no such thing. Holding it back until nothing is left to turn makes it plainly a
+            // re-deal of the hand. In commit-on-flip mode the first turn IS the pick and no other card can
+            // ever be turned, so "every card up" is unreachable there and the turned pick stays the gate;
+            // requiring all of them would delete the button for anyone on the default setting.
+            bool handAllFaceUp = true;
+            for (int i = 0; i < flipT.Length; i++)
+                if (flipT[i] < 0.999f) { handAllFaceUp = false; break; }
+            if (tier <= 1 && !redealt && RedealAllowed && chosen >= 0 && flipT[chosen] >= 0.999f
+                && (!RevealAll || handAllFaceUp))
+            {
+                var rRedeal = new Rect(inRect.width - 104f, 2f, 98f, 32f);
+                TooltipHandler.TipRegion(rRedeal, "PS_CardRedealTip".Translate());
+                if (MXStyle.Button(rRedeal, "PS_CardRedeal".Translate()))
+                    Redeal();
+            }
 
             const float headerH = 72f, footerH = 56f;
             DrawCards(inRect, headerH, footerH);
@@ -512,6 +547,26 @@ namespace PsycastSynergies
             GUI.color = Color.white;
         }
 
+        // Discard this hand and deal another immediately. Closing and re-opening through the normal
+        // OpenPick path is what rebuilds the deal: BuildPool re-rolls on every call, so this reuses the
+        // exact pool rules (count, meditation-focus theming, tier) instead of duplicating them here.
+        // The enqueue must happen BEFORE Close(), because PostClose ends in ShowNextPick() - which is
+        // what actually puts the new window up. `resolved` stops PostClose filing a pending pick.
+        private void Redeal()
+        {
+            resolved = true;
+            redealUsedForPawnId = pawn?.thingIDNumber ?? -1;
+            // MUST happen before OpenPick. BuildPool's seed is deterministic by design, and every term in it
+            // (pawn id, enlightenment count, hand size, tier, paid rerolls) is unchanged by a re-deal - so
+            // without moving this counter the "new" hand was the old hand, dealt again, every time.
+            var med = GameComponent_PsycastSynergies.Instance?.GetMed(pawn, true);
+            if (med != null) med.redeals++;
+            // force: this pawn's window is still on screen, which is exactly what the duplicate guard in
+            // OpenPick refuses. A re-deal is the one case where that is the point.
+            MeditationSystem.OpenPick(pawn, tier, force: true);
+            Close();
+        }
+
         private void DeferReroll()
         {
             resolved = true;
@@ -546,6 +601,7 @@ namespace PsycastSynergies
         private void Confirm()
         {
             resolved = true;
+            if (pawn != null && redealUsedForPawnId == pawn.thingIDNumber) redealUsedForPawnId = -1;   // pick is over; release the marker
             var psy = pawn.Psycasts();
             var path = options[chosen];
             if (psy != null && !psy.unlockedPaths.Contains(path)) psy.UnlockPath(path);

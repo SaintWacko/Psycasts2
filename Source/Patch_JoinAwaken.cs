@@ -22,6 +22,11 @@ namespace PsycastSynergies
     // net for existing saves, dev-spawned pawns and any join route that bypasses SetFaction).
     internal static class JoinAwaken
     {
+        // Counts offers stopped by the PickInFlight guard below. Read by the "Awakening tick" debug tool:
+        // the guard firing is the only positive evidence that the duplicate path was reached and refused,
+        // as opposed to simply not being walked this run.
+        internal static int inFlightSuppressed;
+
         internal static void TryOffer(Pawn p, string source)
         {
             try
@@ -44,6 +49,13 @@ namespace PsycastSynergies
                 var med = gc?.GetMed(p, true);
                 if (med == null) return;
                 if (med.pendingPick > 0) return;                             // already offered; the alert keeps it one click away
+                // A pick already on screen or queued for this pawn IS the offer. The hourly scan runs in the
+                // same tick as RollHourly, immediately after it, so a pawn who has just awakened through
+                // meditation looks exactly like the path-less psycaster this repairs: psycaster, no path,
+                // nothing pending, no cards recorded (Window_Awakening only writes cardPaths on embrace).
+                // Without this the pawn was offered a second hand in the tick they awakened, and it opened
+                // as soon as they answered the first.
+                if (MeditationSystem.PickInFlight(p)) { inFlightSuppressed++; return; }
                 // Belt and braces against a free reroll: a pawn who was given cards before (and later
                 // surrendered the path) is not re-offered one for nothing.
                 if (med.cardPaths != null && med.cardPaths.Count > 0) return;

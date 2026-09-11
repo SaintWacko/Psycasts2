@@ -1,0 +1,67 @@
+{
+  "trackOnLeaderboard": false,
+  "lastPublishedAt": 1789011100093,
+  "game": "rimworld",
+  "pinned": false,
+  "archived": false,
+  "collectionId": null,
+  "license": "MIT",
+  "gitBackupRemote": "https://github.com/Astryls/Psycasts2.git",
+  "versionHistory": [
+    {
+      "version": "1.3.1",
+      "publishedAt": 1789011100970,
+      "source": "pyxis",
+      "notes": "1.3.1\n\nChanged\n- Hauts' Added Traits lets pawns gain a psylink if they have a latent psychic trait. But keeps them unawakened til first meditation.\n\nHousekeeping\n- Adding a way to reopen a waiting card pick straight from the Psycasters roster, instead of only through the alert.\n- Two card windows on one awakening, and \"flow of ancient knowledge\" on a pawn who never awakened"
+    },
+    {
+      "version": "1.3.0",
+      "publishedAt": 1788926728197,
+      "source": "pyxis",
+      "notes": "1.3.0\n\nFixed\n- Tier I re-deal handed back the identical hand — card pool seed had no term for it\n\nAdded\n- Roster action bar can reopen a pick that was set aside"
+    },
+    {
+      "version": "1.2.7",
+      "publishedAt": 1788923479744,
+      "source": "pyxis",
+      "notes": "1.2.7\n\n- Awakening re-deal button waits for the whole hand (reveal-all mode)"
+    },
+    {
+      "version": "1.2.6",
+      "publishedAt": 1788914710027,
+      "source": "manual",
+      "notes": "1.2.6\n\nChanged reroll button and location."
+    },
+    {
+      "version": "1.2.5",
+      "publishedAt": 1788844644856,
+      "source": "pyxis",
+      "notes": "1.2.5\n\n- Separate breakthrough chance sliders for before and after Illuminated"
+    },
+    {
+      "version": "1.2.4",
+      "publishedAt": 1788844080566,
+      "source": "pyxis",
+      "notes": "1.2.4\n\n- Re-deal on a first awakening, and the window-add-during-PostClose hazard it exposed\n- Unlocking a psycast now fires the level-up burst; it never had one\n- Safe meditation can be set to a full 24h, which switches comas off entirely"
+    },
+    {
+      "version": "1.2.3",
+      "publishedAt": 1788841296946,
+      "source": "pyxis",
+      "notes": "1.2.3\n\n- Rebuilt settings pages collapsed to just their first heading (Listing_Standard column break)\n- Both tooltips drew on a psycast icon: the suppression patch targeted a method Mono inlines\n- Removed individual pawn meditation gizmos as they can be changed on the main bar menu.\n- Added per skill fog of war."
+    },
+    {
+      "version": "1.2.2",
+      "publishedAt": 1788834692861,
+      "source": "manual",
+      "notes": "1.2.2\n\nUpdated hediff name."
+    },
+    {
+      "version": "1.2.1",
+      "publishedAt": 1788788556305,
+      "source": "pyxis",
+      "notes": "1.2.1\n\nFixed\n- Pilgrimage quests never end: quest.End(sendStandardLetter:) binds to the QuestGen extension, NREs, latches the quest Ongoing forever\n- Anima pilgrimage: one timed-out incomplete site leaves the quest Ongoing forever (same lockout as #155, different route)\n\nAdded\n- Pilgrimage refire: pity progress now refunded on failure, and generation bail-outs attach an end part\n\nHousekeeping\n- Psycasters main tab replaces the dormant psycast tab (roster, stats, arrival estimates)"
+    }
+  ],
+  "pyxisBoardId": 8
+}
