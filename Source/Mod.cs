@@ -85,6 +85,7 @@ namespace PsycastSynergies
         public bool lockPathsToEnlightenment = true;   // paths unlock only via the awakening cards (or dev mode)
         public bool hideUnlearnedPaths = true;         // VPE-native tab: list only unlocked paths (active while lockPaths is on; tab dev mode bypasses)
         public List<string> autoUnlockedPaths = new List<string>();
+        public bool disableAwakeningTreeChoice = false;
         public bool disableTreeAbilityUnlocks = false;
         public bool restrictUnlocksByPsyLevel = false;
         public bool allowPsytrainerBypassLevelRequirement = false;
@@ -198,6 +199,7 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref hideUnlearnedPaths, "hideUnlearnedPaths", true);
             Scribe_Collections.Look(ref autoUnlockedPaths, "autoUnlockedPaths", LookMode.Value);
             if (autoUnlockedPaths == null) autoUnlockedPaths = new List<string>();
+            Scribe_Values.Look(ref disableAwakeningTreeChoice, "disableAwakeningTreeChoice", false);
             Scribe_Values.Look(ref disableTreeAbilityUnlocks, "disableTreeAbilityUnlocks", false);
             Scribe_Values.Look(ref restrictUnlocksByPsyLevel, "restrictUnlocksByPsyLevel", false);
             Scribe_Values.Look(ref allowPsytrainerBypassLevelRequirement, "allowPsytrainerBypassLevelRequirement", false);
@@ -270,11 +272,13 @@ namespace PsycastSynergies
         public static PsycastSynergiesMod Instance;
         private Vector2 settingsScroll;          // settings panel scroll position
         private int settingsTab;                 // active settings tab
+        private string autoUnlockedPathsKey = string.Empty;
 
         public PsycastSynergiesMod(ModContentPack content) : base(content)
         {
             Instance = this;
             Settings = GetSettings<PsycastSynergiesSettings>();
+            autoUnlockedPathsKey = CurrentAutoUnlockedPathsKey();
         }
 
         public override string SettingsCategory() => "Psycasts²";
@@ -291,13 +295,20 @@ namespace PsycastSynergies
 
         public override void WriteSettings()
         {
+            string prevAutoPaths = autoUnlockedPathsKey;
             base.WriteSettings();
             ApplyVpeLevelCap();
             // Sliders/toggles feed the multiplier math - drop the tick memo and any cached tooltip
             // model so the new values show immediately.
             PerfCache.Bump();
-            PsycastUnlockRules.SyncAllAutoUnlockedPaths();
+            autoUnlockedPathsKey = CurrentAutoUnlockedPathsKey();
+            if (autoUnlockedPathsKey != prevAutoPaths)
+                PsycastUnlockRules.SyncAllAutoUnlockedPaths();
         }
+
+        private static string CurrentAutoUnlockedPathsKey()
+            => Settings?.autoUnlockedPaths == null ? string.Empty
+                : string.Join("\n", Settings.autoUnlockedPaths.Where(x => !string.IsNullOrEmpty(x)).Distinct().OrderBy(x => x));
 
         // Category list down the left of the settings window. Names are keys: "PS_SetTab_" + entry.
         private static readonly string[] SettingsTabs =
@@ -472,35 +483,39 @@ namespace PsycastSynergies
         void TabPaths(Listing_Standard l)
         {
             var s = Settings;
-            bool showPsytrainerBypass = s.restrictUnlocksByPsyLevel;
+            var autoUnlocked = new HashSet<string>(s.autoUnlockedPaths ?? Enumerable.Empty<string>());
+            bool autoUnlockedChanged = false;
 
             Head(l, "PS_SetH_GettingTrees".Translate());
             CB(l, "PS_SetLockPaths".Translate(), ref s.lockPathsToEnlightenment, "PS_SetLockPathsTip".Translate());
             CB(l, "PS_SetNoGeneReq".Translate(), ref s.disableGeneRequirements, "PS_SetNoGeneReqTip".Translate());
             CB(l, "PS_SetMechTrees".Translate(), ref s.enableLockedMechTrees, "PS_SetMechTreesTip".Translate());
+            CB(l, "PS_SetDisableAwakeningTreeChoice".Translate(), ref s.disableAwakeningTreeChoice, "PS_SetDisableAwakeningTreeChoiceTip".Translate());
 
             Head(l, "PS_SetH_AutoPaths".Translate());
             Hint(l, "PS_SetAutoPathsTip".Translate(), false);
             Hint(l, "PS_SetAutoPathsCount".Translate(PsycastUnlockRules.AutoUnlockedPathCount), false);
             foreach (var path in PsycastUnlockRules.SelectablePaths)
             {
-                bool on = s.autoUnlockedPaths.Contains(path.defName);
+                bool on = autoUnlocked.Contains(path.defName);
                 bool prev = on;
                 CB(l, path.LabelCap, ref on, null);
                 if (on == prev) continue;
-                if (on) s.autoUnlockedPaths.Add(path.defName);
-                else s.autoUnlockedPaths.Remove(path.defName);
+                autoUnlockedChanged = true;
+                if (on) autoUnlocked.Add(path.defName);
+                else autoUnlocked.Remove(path.defName);
             }
+            if (autoUnlockedChanged) s.autoUnlockedPaths = autoUnlocked.Where(x => !string.IsNullOrEmpty(x)).OrderBy(x => x).ToList();
 
             Head(l, "PS_SetH_AbilityUnlocks".Translate());
             CB(l, "PS_SetDisableAbilityUnlocks".Translate(), ref s.disableTreeAbilityUnlocks, "PS_SetDisableAbilityUnlocksTip".Translate());
             CB(l, "PS_SetRestrictUnlockLevel".Translate(), ref s.restrictUnlocksByPsyLevel, "PS_SetRestrictUnlockLevelTip".Translate());
-            if (showPsytrainerBypass)
-            {
-                PushSub(l);
-                CB(l, "PS_SetAllowPsytrainerBypass".Translate(), ref s.allowPsytrainerBypassLevelRequirement, "PS_SetAllowPsytrainerBypassTip".Translate());
-                PopSub(l);
-            }
+            PushSub(l);
+            bool enabled = GUI.enabled;
+            GUI.enabled = s.restrictUnlocksByPsyLevel;
+            CB(l, "PS_SetAllowPsytrainerBypass".Translate(), ref s.allowPsytrainerBypassLevelRequirement, "PS_SetAllowPsytrainerBypassTip".Translate());
+            GUI.enabled = enabled;
+            PopSub(l);
 
             Head(l, "PS_SetH_SpecPoints".Translate());
             IS(l, "PS_SetSpecLevels".Translate(s.specLevelsPerPoint), ref s.specLevelsPerPoint, 1, 20,

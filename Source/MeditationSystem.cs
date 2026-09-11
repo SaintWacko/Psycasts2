@@ -740,12 +740,33 @@ namespace PsycastSynergies
                     LetterDefOf.PositiveEvent, p);
         }
 
+        private static bool TreeChoiceDisabled => PsycastSynergiesMod.Settings?.disableAwakeningTreeChoice == true;
+
+        private static void ResolvePickWithoutTree(Pawn p, int tier)
+        {
+            if (p == null) return;
+            if (EnsurePsycaster(p) == null) return;
+            if (EnlightenmentTier.GetTier(p) < tier)
+                EnlightenmentTier.SetTier(p, tier, true);
+            var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
+            if (med != null)
+            {
+                med.pendingPick = 0;
+                med.rerollCount = 0;
+            }
+        }
+
         // `force` is for the one caller that legitimately re-opens a pick for a pawn who already has a window
         // up: the Tier I re-deal button, which enqueues the replacement before it closes its own window.
         // Everything else goes through the duplicate guard.
         public static void OpenPick(Pawn p, int tier, bool force = false)
         {
             if (p == null) return;
+            if (TreeChoiceDisabled)
+            {
+                ResolvePickWithoutTree(p, tier);
+                return;
+            }
             if (!force && !AcceptPick(p, tier)) return;
             var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
             pickQueue.Enqueue(new PickRequest { pawn = p, tier = tier, stamp = med?.pickResolves ?? 0, force = force });
@@ -769,6 +790,11 @@ namespace PsycastSynergies
                 // this is a duplicate of a hand they have already dealt with. Showing it hands out a second
                 // free path.
                 if (!req.force && med != null && med.pickResolves != req.stamp) { staleDropped++; continue; }
+                if (TreeChoiceDisabled)
+                {
+                    ResolvePickWithoutTree(req.pawn, req.tier);
+                    continue;
+                }
                 var st = PsycastSynergiesMod.Settings;
                 int count = st != null && st.cardPickCount > 0 ? st.cardPickCount : (req.tier == 2 ? 5 : 3);
                 bool anyRoll = req.tier >= 3;

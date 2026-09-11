@@ -65,6 +65,8 @@
   <PS_SetNoGeneReqTip>Trees that ask for a gene, such as Archon, can be taken without it.</PS_SetNoGeneReqTip>
   <PS_SetMechTrees>Allow the hidden Mech-Mind trees</PS_SetMechTrees>
   <PS_SetMechTreesTip>Turns on the Mechanitor trees the add-on ships but marks as removed content.</PS_SetMechTreesTip>
+  <PS_SetDisableAwakeningTreeChoice>Awakening and tier increases do not offer a tree choice</PS_SetDisableAwakeningTreeChoice>
+  <PS_SetDisableAwakeningTreeChoiceTip>The pawn still becomes or remains the new tier, but no free tree is offered during awakening or tier-up. Combine this with Always unlocked trees if you still want specific trees granted automatically.</PS_SetDisableAwakeningTreeChoiceTip>
 
   <PS_SetH_AutoPaths>Always unlocked trees</PS_SetH_AutoPaths>
   <PS_SetAutoPathsTip>These trees are treated as already unlocked for your colonists, prisoners and slaves as soon as they are psycasters. They still need points to learn psycasts inside the tree.</PS_SetAutoPathsTip>
