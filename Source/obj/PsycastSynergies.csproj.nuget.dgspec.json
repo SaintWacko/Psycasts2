@@ -1,0 +1,65 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/runner/work/Psycasts2/Psycasts2/Source/PsycastSynergies.csproj": {}
+  },
+  "projects": {
+    "/home/runner/work/Psycasts2/Psycasts2/Source/PsycastSynergies.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/runner/work/Psycasts2/Psycasts2/Source/PsycastSynergies.csproj",
+        "projectName": "PsycastSynergies",
+        "projectPath": "/home/runner/work/Psycasts2/Psycasts2/Source/PsycastSynergies.csproj",
+        "packagesPath": "/tmp/codeql-scratch-4939ee301893328c/dbs/csharp/working/packages",
+        "outputPath": "/home/runner/work/Psycasts2/Psycasts2/Source/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/runner/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net48"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net48": {
+            "framework": "net48",
+            "targetAlias": "net48",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net48": {
+          "framework": "net48",
+          "targetAlias": "net48",
+          "dependencies": {
+            "Lib.Harmony": {
+              "include": "Compile, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "target": "Package",
+              "version": "[2.4.1, )"
+            },
+            "Microsoft.NETFramework.ReferenceAssemblies": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[1.0.3, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.400/RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
