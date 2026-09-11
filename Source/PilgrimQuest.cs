@@ -907,21 +907,31 @@ namespace PsycastSynergies
     public static class ForcedMeditation
     {
         public static readonly HashSet<Pawn> Active = new HashSet<Pawn>();
+        private static readonly HashSet<Pawn> ExternalActive = new HashSet<Pawn>();
 
-        public static bool On(Pawn p) => p != null && Active.Contains(p);
+        public static bool On(Pawn p) => p != null && (Active.Contains(p) || ExternalActive.Contains(p));
+        public static bool Any => Active.Count > 0 || ExternalActive.Count > 0;
 
         public static void Start(Pawn p)
         {
-            if (p == null || p.Faction == null || !p.Faction.IsPlayer) return;
-            Active.Add(p);
-            var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
-            if (med != null) med.forcedMeditation = true;
+            if (p == null) return;
+            if (p.Faction != null && p.Faction.IsPlayer)
+            {
+                Active.Add(p);
+                var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
+                if (med != null) med.forcedMeditation = true;
+            }
+            else
+            {
+                ExternalActive.Add(p);
+            }
         }
 
         public static void Stop(Pawn p)
         {
             if (p == null) return;
             Active.Remove(p);
+            ExternalActive.Remove(p);
             var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, false);
             if (med != null) med.forcedMeditation = false;
             if (p.CurJobDef == JobDefOf.Meditate) p.jobs?.EndCurrentJob(JobCondition.InterruptForced);
@@ -931,6 +941,7 @@ namespace PsycastSynergies
         public static void Rebuild(GameComponent_PsycastSynergies gc)
         {
             Active.Clear();
+            ExternalActive.Clear();
             if (gc == null) return;
             foreach (var kv in gc.MedDataPairs)
                 if (kv.Key != null && kv.Value != null && kv.Value.forcedMeditation) Active.Add(kv.Key);
@@ -948,9 +959,9 @@ namespace PsycastSynergies
 
         public static void Postfix(Pawn_TimetableTracker __instance, ref TimeAssignmentDef __result)
         {
-            if (ForcedMeditation.Active.Count == 0 || __result == TimeAssignmentDefOf.Meditate) return;
+            if (!ForcedMeditation.Any || __result == TimeAssignmentDefOf.Meditate) return;
             var pawn = PawnRef(__instance);
-            if (pawn == null || pawn.Drafted || pawn.Faction == null || !pawn.Faction.IsPlayer || !ForcedMeditation.Active.Contains(pawn)) return;
+            if (pawn == null || pawn.Drafted || !ForcedMeditation.On(pawn)) return;
             __result = TimeAssignmentDefOf.Meditate;
         }
     }
@@ -971,7 +982,7 @@ namespace PsycastSynergies
         {
             if (selPawn == null || !selPawn.HasPsylink || parent.Map == null) yield break;
             // Already meditating continuously? Offer to stop.
-            if (selPawn.Faction != null && selPawn.Faction.IsPlayer && ForcedMeditation.On(selPawn))
+            if (ForcedMeditation.On(selPawn))
             {
                 yield return new FloatMenuOption("PS_StopMeditatingAt".Translate(selPawn.LabelShort), () => ForcedMeditation.Stop(selPawn));
                 yield break;
@@ -992,7 +1003,7 @@ namespace PsycastSynergies
             {
                 // Forced (continuous) meditation: the time-assignment patch keeps vanilla re-issuing
                 // meditation at the best focus (this throne) and stops it ending at full psyfocus.
-                if (selPawn.Faction != null && selPawn.Faction.IsPlayer) ForcedMeditation.Start(selPawn);
+                ForcedMeditation.Start(selPawn);
                 Job job = JobMaker.MakeJob(JobDefOf.Meditate, spot, null, parent);
                 job.ignoreJoyTimeAssignment = true;
                 selPawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
