@@ -971,7 +971,7 @@ namespace PsycastSynergies
         {
             if (selPawn == null || !selPawn.HasPsylink || parent.Map == null) yield break;
             // Already meditating continuously? Offer to stop.
-            if ForcedMeditation.On(selPawn)
+            if (ForcedMeditation.On(selPawn))
             {
                 yield return new FloatMenuOption("PS_StopMeditatingAt".Translate(selPawn.LabelShort), () => ForcedMeditation.Stop(selPawn));
                 yield break;
