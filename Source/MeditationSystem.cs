@@ -103,7 +103,11 @@ namespace PsycastSynergies
                     d.todayTicks = 0;   // daily reset
                 }
             }
-            if (t % 60 == 0) Accumulate(t, gc);
+            if (t % 60 == 0)
+            {
+                ForcedMeditation.Sync();
+                Accumulate(t, gc);
+            }
             if (s.enlightenmentEnabled && t % 2500 == 0) RollHourly(t, gc, s);
             if (t % 2500 == 0) AwakeningTrigger.HourlyScan(gc);   // XML trigger surfaces (thought/precept/surge), independent of the enlightenment toggle
         }
@@ -386,6 +390,7 @@ namespace PsycastSynergies
                     psy = h;
                 }
             }
+            UnlockControls.EnsureAutoUnlocked(p, psy);
             return psy;
         }
 

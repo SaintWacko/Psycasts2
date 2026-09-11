@@ -92,6 +92,17 @@
   <PS_SetLockPathsTip>Paths unlock ONLY through the awakening cards; the tab's normal Unlock buttons are disabled. Dev mode still bypasses this.</PS_SetLockPathsTip>
   <PS_SetHidePaths>Hide unlearned paths</PS_SetHidePaths>
   <PS_SetHidePathsTip>The psycast tab lists only the paths a pawn has unlocked; locked paths are hidden entirely instead of drawn as darkened tiles. Applies to both the VPE tab and Modern Psycasts UI (where it overrides the tree filter to invested-only). Active while "Lock paths to Enlightenment" is on, since paths unlock through the awakening cards anyway. The tab's dev mode always shows every path. On by default.</PS_SetHidePathsTip>
+  <PS_SetAutoUnlockPaths>Auto-unlocked psycast trees: {0}</PS_SetAutoUnlockPaths>
+  <PS_SetAutoUnlockPathsTip>Select any psycast trees that should be unlocked automatically for every pawn with psycasts, without spending a point to unlock the tree.</PS_SetAutoUnlockPathsTip>
+  <PS_SetAutoUnlockPathsActive>Active auto-unlocked trees: {0}</PS_SetAutoUnlockPathsActive>
+  <PS_SetAutoUnlockPathsNone>none</PS_SetAutoUnlockPathsNone>
+  <PS_SetAutoUnlockPathsClear>Clear auto-unlocked trees</PS_SetAutoUnlockPathsClear>
+  <PS_SetDisableTreeUnlocks>Disable learning new psycasts from trees</PS_SetDisableTreeUnlocks>
+  <PS_SetDisableTreeUnlocksTip>Prevent unlearned psycasts from being unlocked directly from the tree. Psycast points can still be spent to level up psycasts the pawn already knows. Off by default.</PS_SetDisableTreeUnlocksTip>
+  <PS_SetRequirePsyLevelUnlock>Require the psycaster level before learning a psycast</PS_SetRequirePsyLevelUnlock>
+  <PS_SetRequirePsyLevelUnlockTip>Prevent a pawn from learning a psycast unless their current psycaster level meets that psycast's required level. Off by default.</PS_SetRequirePsyLevelUnlockTip>
+  <PS_SetRequirePsyLevelPsytrainer>Apply the same psycaster-level gate to psytrainers</PS_SetRequirePsyLevelPsytrainer>
+  <PS_SetRequirePsyLevelPsytrainerTip>When on, psytrainers no longer bypass the psycaster-level requirement for learning a new psycast. When off, psytrainers still can.</PS_SetRequirePsyLevelPsytrainerTip>
   <PS_SetH_SynergyGraph>Synergy graph</PS_SetH_SynergyGraph>
   <PS_SetSynDisabledNote>The synergy and empower system is currently disabled (Skills tab). These settings still edit the stored graph, but it has no effect in-game until you re-enable synergies.</PS_SetSynDisabledNote>
   <PS_SetSynFrozen>Synergies are frozen the first time they are generated and never change afterward, even if you add psycast addons later.</PS_SetSynFrozen>

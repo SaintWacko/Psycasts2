@@ -165,6 +165,7 @@ namespace PsycastSynergies
             // Migration: the apex specialization id "ascendance" was renamed to "convergence".
             foreach (var sp in specs.Values)
                 if (sp != null && sp.owned.Remove("ascendance")) sp.owned.Add("convergence");
+            UnlockControls.SyncAutoUnlockedPaths();
         }
 
         public override void GameComponentTick()
@@ -184,7 +185,11 @@ namespace PsycastSynergies
             }
 
             MeditationSystem.Tick(t, this);   // meditation tracking + Enlightenment + coma risk (gates internally)
-            if (t % 250 == 0) SyncPsycastHediffs();
+            if (t % 250 == 0)
+            {
+                UnlockControls.SyncAutoUnlockedPaths();
+                SyncPsycastHediffs();
+            }
         }
 
         // Informational counts for the Psychic Resonance hediff readout.
