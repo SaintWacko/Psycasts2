@@ -66,6 +66,17 @@
   <PS_SetMechTrees>Allow the hidden Mech-Mind trees</PS_SetMechTrees>
   <PS_SetMechTreesTip>Turns on the Mechanitor trees the add-on ships but marks as removed content.</PS_SetMechTreesTip>
 
+  <PS_SetH_AutoPaths>Always unlocked trees</PS_SetH_AutoPaths>
+  <PS_SetAutoPathsTip>These trees are treated as already unlocked for your colonists, prisoners and slaves as soon as they are psycasters. They still need points to learn psycasts inside the tree.</PS_SetAutoPathsTip>
+  <PS_SetAutoPathsCount>{0} tree(s) selected</PS_SetAutoPathsCount>
+  <PS_SetH_AbilityUnlocks>Unlocking psycasts</PS_SetH_AbilityUnlocks>
+  <PS_SetDisableAbilityUnlocks>Spending points cannot unlock new psycasts from the tree</PS_SetDisableAbilityUnlocks>
+  <PS_SetDisableAbilityUnlocksTip>Psycast points can still level up psycasts the pawn already knows, but clicking new nodes in the tree no longer learns them.</PS_SetDisableAbilityUnlocksTip>
+  <PS_SetRestrictUnlockLevel>Cannot unlock a psycast before the pawn has the psycaster level for it</PS_SetRestrictUnlockLevel>
+  <PS_SetRestrictUnlockLevelTip>Uses the same psycaster-level gate as psycast leveling. If a node would start above the pawn's current psycaster level, it stays locked.</PS_SetRestrictUnlockLevelTip>
+  <PS_SetAllowPsytrainerBypass>Psytrainers can ignore that psycaster-level requirement</PS_SetAllowPsytrainerBypass>
+  <PS_SetAllowPsytrainerBypassTip>Off means psytrainers are blocked too, and will say exactly which psycaster level is required.</PS_SetAllowPsytrainerBypassTip>
+
   <PS_SetH_SpecPoints>Specialization points</PS_SetH_SpecPoints>
   <PS_SetSpecLevels>Psycaster levels per point: {0}</PS_SetSpecLevels>
   <PS_SetSpecLevelsTip>How often levelling up hands you a point for the constellation. Lower means points arrive faster.</PS_SetSpecLevelsTip>

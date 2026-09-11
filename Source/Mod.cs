@@ -1,6 +1,7 @@
 #nullable disable
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -83,6 +84,10 @@ namespace PsycastSynergies
         public bool enableLockedMechTrees = true;
         public bool lockPathsToEnlightenment = true;   // paths unlock only via the awakening cards (or dev mode)
         public bool hideUnlearnedPaths = true;         // VPE-native tab: list only unlocked paths (active while lockPaths is on; tab dev mode bypasses)
+        public List<string> autoUnlockedPaths = new List<string>();
+        public bool disableTreeAbilityUnlocks = false;
+        public bool restrictUnlocksByPsyLevel = false;
+        public bool allowPsytrainerBypassLevelRequirement = false;
 
         // XP system. Casting (tier-scaled) is the primary source; meditation is a reduced trickle;
         // meditating pawns can randomly break through ("Enlightenment") for a big burst.
@@ -191,6 +196,11 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref enableLockedMechTrees, "enableLockedMechTrees", true);
             Scribe_Values.Look(ref lockPathsToEnlightenment, "lockPathsToEnlightenment", true);
             Scribe_Values.Look(ref hideUnlearnedPaths, "hideUnlearnedPaths", true);
+            Scribe_Collections.Look(ref autoUnlockedPaths, "autoUnlockedPaths", LookMode.Value);
+            if (autoUnlockedPaths == null) autoUnlockedPaths = new List<string>();
+            Scribe_Values.Look(ref disableTreeAbilityUnlocks, "disableTreeAbilityUnlocks", false);
+            Scribe_Values.Look(ref restrictUnlocksByPsyLevel, "restrictUnlocksByPsyLevel", false);
+            Scribe_Values.Look(ref allowPsytrainerBypassLevelRequirement, "allowPsytrainerBypassLevelRequirement", false);
             Scribe_Values.Look(ref meditationXpMult, "meditationXpMult", 0.35f);
             Scribe_Values.Look(ref castXpPerTier, "castXpPerTier", 20f);
             Scribe_Values.Look(ref noPsyfocusDecay, "noPsyfocusDecay", true);
@@ -286,6 +296,7 @@ namespace PsycastSynergies
             // Sliders/toggles feed the multiplier math - drop the tick memo and any cached tooltip
             // model so the new values show immediately.
             PerfCache.Bump();
+            PsycastUnlockRules.SyncAllAutoUnlockedPaths();
         }
 
         // Category list down the left of the settings window. Names are keys: "PS_SetTab_" + entry.
@@ -461,10 +472,35 @@ namespace PsycastSynergies
         void TabPaths(Listing_Standard l)
         {
             var s = Settings;
+            bool showPsytrainerBypass = s.restrictUnlocksByPsyLevel;
+
             Head(l, "PS_SetH_GettingTrees".Translate());
             CB(l, "PS_SetLockPaths".Translate(), ref s.lockPathsToEnlightenment, "PS_SetLockPathsTip".Translate());
             CB(l, "PS_SetNoGeneReq".Translate(), ref s.disableGeneRequirements, "PS_SetNoGeneReqTip".Translate());
             CB(l, "PS_SetMechTrees".Translate(), ref s.enableLockedMechTrees, "PS_SetMechTreesTip".Translate());
+
+            Head(l, "PS_SetH_AutoPaths".Translate());
+            Hint(l, "PS_SetAutoPathsTip".Translate(), false);
+            Hint(l, "PS_SetAutoPathsCount".Translate(PsycastUnlockRules.AutoUnlockedPathCount), false);
+            foreach (var path in PsycastUnlockRules.SelectablePaths)
+            {
+                bool on = s.autoUnlockedPaths.Contains(path.defName);
+                bool prev = on;
+                CB(l, path.LabelCap, ref on, null);
+                if (on == prev) continue;
+                if (on) s.autoUnlockedPaths.Add(path.defName);
+                else s.autoUnlockedPaths.Remove(path.defName);
+            }
+
+            Head(l, "PS_SetH_AbilityUnlocks".Translate());
+            CB(l, "PS_SetDisableAbilityUnlocks".Translate(), ref s.disableTreeAbilityUnlocks, "PS_SetDisableAbilityUnlocksTip".Translate());
+            CB(l, "PS_SetRestrictUnlockLevel".Translate(), ref s.restrictUnlocksByPsyLevel, "PS_SetRestrictUnlockLevelTip".Translate());
+            if (showPsytrainerBypass)
+            {
+                PushSub(l);
+                CB(l, "PS_SetAllowPsytrainerBypass".Translate(), ref s.allowPsytrainerBypassLevelRequirement, "PS_SetAllowPsytrainerBypassTip".Translate());
+                PopSub(l);
+            }
 
             Head(l, "PS_SetH_SpecPoints".Translate());
             IS(l, "PS_SetSpecLevels".Translate(s.specLevelsPerPoint), ref s.specLevelsPerPoint, 1, 20,

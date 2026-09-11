@@ -247,4 +247,5 @@
   <PS_FxCasterGains>Caster gains</PS_FxCasterGains>
   <PS_FxTargetGains>Target gains</PS_FxTargetGains>
 
+  <PS_MsgPsytrainerLevelRequired>{0} requires psycaster level {1}. Use a higher-level psycaster to learn it.</PS_MsgPsytrainerLevelRequired>
 </LanguageData>

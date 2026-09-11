@@ -912,7 +912,7 @@ namespace PsycastSynergies
 
         public static void Start(Pawn p)
         {
-            if (p == null) return;
+            if (p == null || p.Faction == null || !p.Faction.IsPlayer) return;
             Active.Add(p);
             var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
             if (med != null) med.forcedMeditation = true;
@@ -950,7 +950,7 @@ namespace PsycastSynergies
         {
             if (ForcedMeditation.Active.Count == 0 || __result == TimeAssignmentDefOf.Meditate) return;
             var pawn = PawnRef(__instance);
-            if (pawn == null || pawn.Drafted || !ForcedMeditation.Active.Contains(pawn)) return;
+            if (pawn == null || pawn.Drafted || pawn.Faction == null || !pawn.Faction.IsPlayer || !ForcedMeditation.Active.Contains(pawn)) return;
             __result = TimeAssignmentDefOf.Meditate;
         }
     }
@@ -971,7 +971,7 @@ namespace PsycastSynergies
         {
             if (selPawn == null || !selPawn.HasPsylink || parent.Map == null) yield break;
             // Already meditating continuously? Offer to stop.
-            if (ForcedMeditation.On(selPawn))
+            if (selPawn.Faction != null && selPawn.Faction.IsPlayer && ForcedMeditation.On(selPawn))
             {
                 yield return new FloatMenuOption("PS_StopMeditatingAt".Translate(selPawn.LabelShort), () => ForcedMeditation.Stop(selPawn));
                 yield break;
@@ -992,7 +992,7 @@ namespace PsycastSynergies
             {
                 // Forced (continuous) meditation: the time-assignment patch keeps vanilla re-issuing
                 // meditation at the best focus (this throne) and stops it ending at full psyfocus.
-                ForcedMeditation.Start(selPawn);
+                if (selPawn.Faction != null && selPawn.Faction.IsPlayer) ForcedMeditation.Start(selPawn);
                 Job job = JobMaker.MakeJob(JobDefOf.Meditate, spot, null, parent);
                 job.ignoreJoyTimeAssignment = true;
                 selPawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
