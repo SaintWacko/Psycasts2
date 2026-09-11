@@ -8,6 +8,7 @@ using UnityEngine;
 using Verse;
 using VEF.Abilities;
 using VanillaPsycastsExpanded;
+using AbilityDef = VEF.Abilities.AbilityDef;
 
 namespace PsycastSynergies
 {
