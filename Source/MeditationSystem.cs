@@ -41,7 +41,8 @@ namespace PsycastSynergies
         // rather than dealing a second one. A save/load empties the pick queue as well, so nothing that
         // reads this outlives the session that wrote it.
         public int pickResolves;
-        public System.Collections.Generic.List<PsycasterPathDef> cardPaths;   // paths chosen via cards, in tier order (for path respec)
+        public System.Collections.Generic.List<bool> tierPathChoices;         // whether each resolved tier granted a path (for respec / no-choice persistence)
+        public System.Collections.Generic.List<PsycasterPathDef> cardPaths;   // the granted paths, in the same order as the true entries above
         public string focusType;         // VPE meditation-focus TYPE defName (or building defName) of the last focus meditated at
         public string defaultFocus;      // pawn's personal default focus type - used when meditating at an unattuned building
         public bool forcedMeditation;    // "meditate your ass off": keep meditating continuously (forces time assignment)
@@ -76,6 +77,7 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref pendingPick, "pendingPick", 0);
             Scribe_Values.Look(ref rerollCount, "rerollCount", 0);
             Scribe_Values.Look(ref redeals, "redeals", 0);
+            Scribe_Collections.Look(ref tierPathChoices, "tierPathChoices", LookMode.Value);
             Scribe_Collections.Look(ref cardPaths, "cardPaths", LookMode.Def);
             Scribe_Values.Look(ref focusType, "focus");
             Scribe_Values.Look(ref defaultFocus, "defaultFocus");
@@ -268,6 +270,7 @@ namespace PsycastSynergies
             med.enlightenments = 0;
             med.awakenMeditationTicks = 0;
             med.pendingPick = 0;
+            med.tierPathChoices?.Clear();
             med.cardPaths?.Clear();
             EnlightenmentTier.SetTier(p, 0, false);
             Messages.Message(p.LabelShortCap + " now holds a psylink this mod never adopted: no path, no tier.",
@@ -742,6 +745,19 @@ namespace PsycastSynergies
 
         private static bool TreeChoiceDisabled => PsycastSynergiesMod.Settings?.disableAwakeningTreeChoice == true;
 
+        internal static bool HasResolvedTierChoice(MeditationData med)
+            => med?.tierPathChoices != null && med.tierPathChoices.Count > 0;
+
+        internal static void RecordTierChoice(MeditationData med, int tier, bool grantedPath)
+        {
+            if (med == null || tier <= 0) return;
+            var choices = med.tierPathChoices ?? (med.tierPathChoices = new List<bool>());
+            int existingPaths = med.cardPaths?.Count ?? 0;
+            while (choices.Count < tier - 1) choices.Add(choices.Count < existingPaths);
+            if (choices.Count < tier) choices.Add(grantedPath);
+            else choices[tier - 1] = grantedPath;
+        }
+
         private static void ResolvePickWithoutTree(Pawn p, int tier)
         {
             if (p == null) return;
@@ -753,6 +769,7 @@ namespace PsycastSynergies
             {
                 med.pendingPick = 0;
                 med.rerollCount = 0;
+                RecordTierChoice(med, tier, false);
             }
         }
 

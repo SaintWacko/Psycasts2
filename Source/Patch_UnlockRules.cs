@@ -78,6 +78,7 @@ namespace PsycastSynergies
         {
             var s = PsycastSynergiesMod.Settings;
             if (pawn == null || ability == null || s == null) return false;
+            if (!AppliesTo(pawn)) return false;
             if (s.disableTreeAbilityUnlocks) return true;
             return NeedsPsyLevel(pawn, ability, out _);
         }

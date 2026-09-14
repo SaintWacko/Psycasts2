@@ -590,7 +590,11 @@ namespace PsycastSynergies
             var spec = gc?.GetSpec(pawn, true);
             if (spec != null) spec.points += pts;
             var med = gc?.GetMed(pawn, true);
-            if (med != null) { med.rerollCount = 0; med.pendingPick = 0; }
+            if (med != null)
+            {
+                med.rerollCount = 0; med.pendingPick = 0;
+                MeditationSystem.RecordTierChoice(med, tier, false);
+            }
             SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
             if (PawnUtility.ShouldSendNotificationAbout(pawn))
                 Messages.Message("PS_MsgForgo".Translate(pawn.LabelShortCap, pts),
@@ -610,6 +614,7 @@ namespace PsycastSynergies
             if (med != null)
             {
                 med.rerollCount = 0; med.pendingPick = 0;
+                MeditationSystem.RecordTierChoice(med, tier, true);
                 (med.cardPaths ?? (med.cardPaths = new List<PsycasterPathDef>())).Add(path);   // record for path respec
             }
             SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();

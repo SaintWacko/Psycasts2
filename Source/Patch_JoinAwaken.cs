@@ -56,9 +56,9 @@ namespace PsycastSynergies
                 // Without this the pawn was offered a second hand in the tick they awakened, and it opened
                 // as soon as they answered the first.
                 if (MeditationSystem.PickInFlight(p)) { inFlightSuppressed++; return; }
-                // Belt and braces against a free reroll: a pawn who was given cards before (and later
-                // surrendered the path) is not re-offered one for nothing.
-                if (med.cardPaths != null && med.cardPaths.Count > 0) return;
+                // Belt and braces against a free reroll: once any awakening/tier-up was already resolved
+                // for this pawn - with or without a path - the join repair has nothing left to do.
+                if (MeditationSystem.HasResolvedTierChoice(med)) return;
 
                 med.awakened = true;
                 int tier = Mathf.Max(1, EnlightenmentTier.TierOf(p));
