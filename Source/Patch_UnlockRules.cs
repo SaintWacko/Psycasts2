@@ -101,7 +101,7 @@ namespace PsycastSynergies
             => PsycastUnlockRules.SyncAutoUnlockedPaths(__instance);
     }
 
-    [HarmonyPatch(typeof(Hediff_PsycastAbilities), nameof(Hediff_PsycastAbilities.ChangeLevel), new Type[] { typeof(int) })]
+[HarmonyPatch(typeof(Hediff_PsycastAbilities), nameof(Hediff_PsycastAbilities.ChangeLevel), new Type[] { typeof(int), typeof(bool) })]
     public static class Patch_AutoUnlockedPaths_Level
     {
         static void Postfix(Hediff_PsycastAbilities __instance)
