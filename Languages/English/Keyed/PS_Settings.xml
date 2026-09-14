@@ -65,19 +65,17 @@
   <PS_SetNoGeneReqTip>Trees that ask for a gene, such as Archon, can be taken without it.</PS_SetNoGeneReqTip>
   <PS_SetMechTrees>Allow the hidden Mech-Mind trees</PS_SetMechTrees>
   <PS_SetMechTreesTip>Turns on the Mechanitor trees the add-on ships but marks as removed content.</PS_SetMechTreesTip>
-  <PS_SetDisableAwakeningTreeChoice>Awakening and tier increases do not offer a tree choice</PS_SetDisableAwakeningTreeChoice>
-  <PS_SetDisableAwakeningTreeChoiceTip>The pawn still becomes or remains the new tier, but no free tree is offered during awakening or tier-up. Combine this with Always unlocked trees if you still want specific trees granted automatically.</PS_SetDisableAwakeningTreeChoiceTip>
 
   <PS_SetH_AutoPaths>Always unlocked trees</PS_SetH_AutoPaths>
-  <PS_SetAutoPathsTip>These trees are treated as already unlocked for your colonists, prisoners and slaves as soon as they are psycasters. They still need points to learn psycasts inside the tree.</PS_SetAutoPathsTip>
+  <PS_SetAutoPathsTip>These trees are treated as already unlocked for your colonists, prisoners and slaves as soon as they are psycasters.</PS_SetAutoPathsTip>
   <PS_SetAutoPathsCount>{0} tree(s) selected</PS_SetAutoPathsCount>
   <PS_SetH_AbilityUnlocks>Unlocking psycasts</PS_SetH_AbilityUnlocks>
-  <PS_SetDisableAbilityUnlocks>Spending points cannot unlock new psycasts from the tree</PS_SetDisableAbilityUnlocks>
-  <PS_SetDisableAbilityUnlocksTip>Psycast points can still level up psycasts the pawn already knows, but clicking new nodes in the tree no longer learns them.</PS_SetDisableAbilityUnlocksTip>
+  <PS_SetDisableAbilityUnlocks>New Psycasts cannot be unlocked with points</PS_SetDisableAbilityUnlocks>
+  <PS_SetDisableAbilityUnlocksTip>Psycast points can still level up psycasts the pawn already knows, but they can no longer be spent to unlock new psycasts from the tree.</PS_SetDisableAbilityUnlocksTip>
   <PS_SetRestrictUnlockLevel>Cannot unlock a psycast before the pawn has the psycaster level for it</PS_SetRestrictUnlockLevel>
   <PS_SetRestrictUnlockLevelTip>Uses the same psycaster-level gate as psycast leveling. If a node would start above the pawn's current psycaster level, it stays locked.</PS_SetRestrictUnlockLevelTip>
-  <PS_SetAllowPsytrainerBypass>Psytrainers can ignore that psycaster-level requirement</PS_SetAllowPsytrainerBypass>
-  <PS_SetAllowPsytrainerBypassTip>Off means psytrainers are blocked too, and will say exactly which psycaster level is required.</PS_SetAllowPsytrainerBypassTip>
+  <PS_SetAllowPsytrainerBypass>Psytrainers bypass the psycaster-level requirement</PS_SetAllowPsytrainerBypass>
+  <PS_SetAllowPsytrainerBypassTip>Allows psytrainers to unlock psycasts regardless of level requirement.</PS_SetAllowPsytrainerBypassTip>
 
   <PS_SetH_SpecPoints>Specialization points</PS_SetH_SpecPoints>
   <PS_SetSpecLevels>Psycaster levels per point: {0}</PS_SetSpecLevels>
@@ -125,6 +123,8 @@
   <PS_SetComaRiskTip>Rolled once an hour, so the ninth hour of a day is about three times as risky as the seventh. A coma lasts from four hours up to eight days.</PS_SetComaRiskTip>
 
   <PS_SetH_Cards>Awakening cards</PS_SetH_Cards>
+  <PS_SetEnableAwakeningTreeChoice>Enable Awakening Cards</PS_SetEnableAwakeningTreeChoice>
+  <PS_SetEnableAwakeningTreeChoiceTip>Upon Awakening or Tier increase, the pawn is offered a choice of psycasting trees to unlock.</PS_SetEnableAwakeningTreeChoiceTip>
   <PS_SetRevealAll>Turn the cards one at a time</PS_SetRevealAll>
   <PS_SetRevealAllTip>The rest of the deal stays face down and you turn each card by hand. Any card you have turned can still be the one you take. Off, the card you turn is the one you get.</PS_SetRevealAllTip>
   <PS_SetCardCount>Cards dealt: {0}</PS_SetCardCount>

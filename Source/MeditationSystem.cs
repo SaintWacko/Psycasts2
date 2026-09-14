@@ -743,7 +743,7 @@ namespace PsycastSynergies
                     LetterDefOf.PositiveEvent, p);
         }
 
-        private static bool TreeChoiceDisabled => PsycastSynergiesMod.Settings?.disableAwakeningTreeChoice == true;
+        private static bool TreeChoiceDisabled => PsycastSynergiesMod.Settings?.enableAwakeningTreeChoice != true;
 
         internal static bool HasResolvedTierChoice(MeditationData med)
             => med?.tierPathChoices != null && med.tierPathChoices.Count > 0;
@@ -762,7 +762,7 @@ namespace PsycastSynergies
         {
             if (p == null) return;
             if (EnsurePsycaster(p) == null) return;
-            if (EnlightenmentTier.GetTier(p) < tier)
+            if (EnlightenmentTier.TierOf(p) < tier)
                 EnlightenmentTier.SetTier(p, tier, true);
             var med = GameComponent_PsycastSynergies.Instance?.GetMed(p, true);
             if (med != null)

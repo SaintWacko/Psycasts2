@@ -85,7 +85,7 @@ namespace PsycastSynergies
         public bool lockPathsToEnlightenment = true;   // paths unlock only via the awakening cards (or dev mode)
         public bool hideUnlearnedPaths = true;         // VPE-native tab: list only unlocked paths (active while lockPaths is on; tab dev mode bypasses)
         public List<string> autoUnlockedPaths = new List<string>();
-        public bool disableAwakeningTreeChoice = false;
+        public bool enableAwakeningTreeChoice = true;
         public bool disableTreeAbilityUnlocks = false;
         public bool restrictUnlocksByPsyLevel = false;
         public bool allowPsytrainerBypassLevelRequirement = false;
@@ -199,7 +199,7 @@ namespace PsycastSynergies
             Scribe_Values.Look(ref hideUnlearnedPaths, "hideUnlearnedPaths", true);
             Scribe_Collections.Look(ref autoUnlockedPaths, "autoUnlockedPaths", LookMode.Value);
             if (autoUnlockedPaths == null) autoUnlockedPaths = new List<string>();
-            Scribe_Values.Look(ref disableAwakeningTreeChoice, "disableAwakeningTreeChoice", false);
+            Scribe_Values.Look(ref enableAwakeningTreeChoice, "enableAwakeningTreeChoice", true);
             Scribe_Values.Look(ref disableTreeAbilityUnlocks, "disableTreeAbilityUnlocks", false);
             Scribe_Values.Look(ref restrictUnlocksByPsyLevel, "restrictUnlocksByPsyLevel", false);
             Scribe_Values.Look(ref allowPsytrainerBypassLevelRequirement, "allowPsytrainerBypassLevelRequirement", false);
@@ -490,7 +490,6 @@ namespace PsycastSynergies
             CB(l, "PS_SetLockPaths".Translate(), ref s.lockPathsToEnlightenment, "PS_SetLockPathsTip".Translate());
             CB(l, "PS_SetNoGeneReq".Translate(), ref s.disableGeneRequirements, "PS_SetNoGeneReqTip".Translate());
             CB(l, "PS_SetMechTrees".Translate(), ref s.enableLockedMechTrees, "PS_SetMechTreesTip".Translate());
-            CB(l, "PS_SetDisableAwakeningTreeChoice".Translate(), ref s.disableAwakeningTreeChoice, "PS_SetDisableAwakeningTreeChoiceTip".Translate());
 
             Head(l, "PS_SetH_AutoPaths".Translate());
             Hint(l, "PS_SetAutoPathsTip".Translate(), false);
@@ -576,11 +575,15 @@ namespace PsycastSynergies
                     "PS_SetComaRiskTip".Translate());
 
             Head(l, "PS_SetH_Cards".Translate());
-            CB(l, "PS_SetRevealAll".Translate(), ref s.cardRevealAll, "PS_SetRevealAllTip".Translate());
-            IS(l, "PS_SetCardCount".Translate(s.cardPickCount <= 0 ? "PS_SetCardCountAuto".Translate().ToString() : s.cardPickCount.ToString()), ref s.cardPickCount, 0, 8,
-                "PS_SetCardCountTip".Translate());
-            CB(l, "PS_SetCardRedeal".Translate(), ref s.cardRedeal, "PS_SetCardRedealTip".Translate());
-            Hint(l, "PS_SetChooseLaterInfo".Translate(), false);
+            CB(l, "PS_SetEnableAwakeningTreeChoice".Translate(), ref s.enableAwakeningTreeChoice, "PS_SetEnableAwakeningTreeChoiceTip".Translate());
+            if (s.enableAwakeningTreeChoice)
+            {
+                CB(l, "PS_SetRevealAll".Translate(), ref s.cardRevealAll, "PS_SetRevealAllTip".Translate());
+                IS(l, "PS_SetCardCount".Translate(s.cardPickCount <= 0 ? "PS_SetCardCountAuto".Translate().ToString() : s.cardPickCount.ToString()), ref s.cardPickCount, 0, 8,
+                    "PS_SetCardCountTip".Translate());
+                CB(l, "PS_SetCardRedeal".Translate(), ref s.cardRedeal, "PS_SetCardRedealTip".Translate());
+                Hint(l, "PS_SetChooseLaterInfo".Translate(), false);
+            }
 
             Head(l, "PS_SetH_WhoBecomes".Translate());
             CB(l, "PS_SetEmpirePsylink".Translate(), ref s.empirePsylinkIntegrate, "PS_SetEmpirePsylinkTip".Translate());
