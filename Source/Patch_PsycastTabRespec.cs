@@ -252,7 +252,7 @@ namespace PsycastSynergies
             if (tier <= 1)
             {
                 EnlightenmentTier.SetTier(pawn, 0, false);
-                if (med != null) { med.awakened = false; med.enlightenments = 0; med.cardPaths?.Clear(); }
+                if (med != null) { med.awakened = false; med.enlightenments = 0; med.tierPathChoices?.Clear(); med.cardPaths?.Clear(); }
                 gc?.ClearPawn(pawn);
                 // Remove the learned psycast abilities too - otherwise their gizmos keep calling
                 // ShowGizmoOnPawn with no Psycasts hediff (spams "called on a pawn that does not have Psycasts").
@@ -271,8 +271,15 @@ namespace PsycastSynergies
 
             // Higher tiers: drop one tier - remove the highest card path + its abilities (refund the
             // points spent learning/leveling them), keep the psylink.
+            bool surrenderedTierGrantedPath = med?.tierPathChoices == null || med.tierPathChoices.Count == 0;
+            if (med?.tierPathChoices != null && med.tierPathChoices.Count > 0)
+            {
+                int last = med.tierPathChoices.Count - 1;
+                surrenderedTierGrantedPath = med.tierPathChoices[last];
+                med.tierPathChoices.RemoveAt(last);
+            }
             PsycasterPathDef drop = null;
-            if (med?.cardPaths != null && med.cardPaths.Count > 0)
+            if (surrenderedTierGrantedPath && med?.cardPaths != null && med.cardPaths.Count > 0)
             {
                 drop = med.cardPaths[med.cardPaths.Count - 1];
                 med.cardPaths.RemoveAt(med.cardPaths.Count - 1);
